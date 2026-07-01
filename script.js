@@ -4356,6 +4356,212 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V39.1 ONLINE BOARD + DICE FIX ===== */
+
+  function normalizeOnlineGamePlayers(rawPlayers){
+    return (rawPlayers || []).map((p, index) => ({
+      id: p.id || ("online_" + index),
+      name: p.name || `Oyuncu ${index + 1}`,
+      character: p.character || "🚗",
+      host: !!p.host,
+      money: Number.isFinite(Number(p.money)) ? Number(p.money) : 1500,
+      position: Number.isFinite(Number(p.position)) ? Number(p.position) : 0,
+      owned: Array.isArray(p.owned) ? p.owned : [],
+      housesAvailable: Number.isFinite(Number(p.housesAvailable)) ? Number(p.housesAvailable) : 12,
+      hotelsAvailable: Number.isFinite(Number(p.hotelsAvailable)) ? Number(p.hotelsAvailable) : 4,
+      jailTurns: Number.isFinite(Number(p.jailTurns)) ? Number(p.jailTurns) : 0,
+      isBot: false,
+      className: `p${index + 1}`
+    }));
+  }
+
+  function forceBuildBoardForOnline(){
+    const board = $("board");
+    if(!board) return;
+
+    // Eski bozuk/yarım tile varsa temizle.
+    board.querySelectorAll(".tile").forEach(t => t.remove());
+
+    // Tahtayı tekrar bas.
+    boardSpaces.forEach((space,index) => {
+      const rect = getTileRect(index);
+      const tile = document.createElement("div");
+      tile.className = `tile ${space.t}`;
+      if(isLongName(space.n)) tile.classList.add("small-text");
+      tile.style.left = `${rect.x}%`;
+      tile.style.top = `${rect.y}%`;
+      tile.style.width = `${rect.w}%`;
+      tile.style.height = `${rect.h}%`;
+      tile.innerHTML = tileHTML(space);
+      tile.addEventListener("click", () => openCard(space, index));
+      board.appendChild(tile);
+    });
+  }
+
+  function setDiceFaceNumber(el, value){
+    if(!el) return;
+    const n = Math.max(1, Math.min(6, Number(value) || 1));
+    el.textContent = "";
+    el.classList.remove("dice-1","dice-2","dice-3","dice-4","dice-5","dice-6");
+    el.classList.add(`dice-${n}`);
+    el.dataset.value = String(n);
+  }
+
+  function resetDiceFacesVisual(){
+    setDiceFaceNumber($("diceOne"), 1);
+    setDiceFaceNumber($("diceTwo"), 1);
+    if($("diceTotal")) $("diceTotal").textContent = "Toplam: -";
+  }
+
+  const _applyOnlineGameStateV391 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    if(!data) return;
+
+    if(Array.isArray(data.players)){
+      onlineGamePlayers = data.players;
+      players = normalizeOnlineGamePlayers(data.players);
+    }
+
+    activePlayerIndex = Number.isFinite(Number(data.activePlayerIndex)) ? Number(data.activePlayerIndex) : 0;
+    hasRolledThisTurn = !!data.hasRolledThisTurn;
+    canEndTurn = !!data.canEndTurn;
+
+    forceBuildBoardForOnline();
+    renderPlayers();
+    createTokens();
+    refreshTileOwnership();
+    updatePanel();
+    updateTurnButtons();
+    renderLeftPlayerPanel();
+    setActiveToken?.();
+
+    if(data.diceOne && data.diceTwo){
+      setDiceFaceNumber($("diceOne"), data.diceOne);
+      setDiceFaceNumber($("diceTwo"), data.diceTwo);
+      if($("diceTotal")) $("diceTotal").textContent = `Toplam: ${Number(data.diceOne) + Number(data.diceTwo)}`;
+    }else{
+      resetDiceFacesVisual();
+    }
+
+    if($("diceTotal") && data.message){
+      $("diceTotal").textContent = data.message;
+    }
+
+    setOnlineControls();
+  };
+
+  const _startOnlineGameFromRoomV391 = startOnlineGameFromRoom;
+  startOnlineGameFromRoom = async function(data){
+    if(!data?.gameState) return;
+
+    isOnlineGame = true;
+    onlineGameRoomCode = onlineCurrentRoomCode || data.code || onlineGameRoomCode;
+
+    // Önce game ekranını aç, sonra DOM içinde board'u kur.
+    closeOnlineOverlay();
+    showScreen("game");
+
+    await wait(80);
+
+    applyOnlineGameState(data.gameState);
+    listenOnlineGameState(onlineGameRoomCode);
+
+    addActivity?.(`🌐 Online oyun başladı. Oda: ${onlineGameRoomCode || "?"}`);
+  };
+
+  const _writeInitialOnlineGameStateV391 = writeInitialOnlineGameState;
+  writeInitialOnlineGameState = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+
+    const finalPlayers = onlineLobbyPlayersCache.map((p, index) => ({
+      id: p.id,
+      name: p.name || `Oyuncu ${index + 1}`,
+      host: !!p.host,
+      character: p.character || (p.id === onlinePlayerId ? selectedCharacter : "🚗"),
+      money: 1500,
+      position: 0,
+      owned: [],
+      housesAvailable: 12,
+      hotelsAvailable: 4,
+      jailTurns: 0
+    }));
+
+    await roomRef(onlineCurrentRoomCode).set({
+      status: "playing",
+      gameState: {
+        players: finalPlayers,
+        activePlayerIndex: 0,
+        hasRolledThisTurn: false,
+        canEndTurn: false,
+        round: 1,
+        diceOne: 1,
+        diceTwo: 1,
+        message: "Online oyun başladı. Sıra ilk oyuncuda."
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  };
+
+  const _rollDiceV391 = rollDice;
+  rollDice = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    // Zar sayılarını önceden yakalayabilmek için manuel sayı üret.
+    if(isOnlineGame){
+      const d1 = Math.ceil(Math.random() * 6);
+      const d2 = Math.ceil(Math.random() * 6);
+      setDiceFaceNumber($("diceOne"), d1);
+      setDiceFaceNumber($("diceTwo"), d2);
+    }
+
+    _rollDiceV391();
+
+    if(isOnlineGame && onlineGameRoomCode && initFirebaseLobby()){
+      setTimeout(async () => {
+        try{
+          const statePlayers = normalizeOnlineGamePlayers(players).map(p => ({
+            id:p.id,
+            name:p.name,
+            host:!!p.host,
+            character:p.character || "🚗",
+            money:p.money,
+            position:p.position,
+            owned:p.owned || [],
+            housesAvailable:p.housesAvailable ?? 12,
+            hotelsAvailable:p.hotelsAvailable ?? 4,
+            jailTurns:p.jailTurns || 0
+          }));
+
+          const diceOneValue = Number($("diceOne")?.dataset.value || 1);
+          const diceTwoValue = Number($("diceTwo")?.dataset.value || 1);
+
+          await roomRef(onlineGameRoomCode).set({
+            gameState:{
+              players: statePlayers,
+              activePlayerIndex,
+              hasRolledThisTurn,
+              canEndTurn,
+              diceOne: diceOneValue,
+              diceTwo: diceTwoValue,
+              message: `${players[activePlayerIndex]?.name || "Oyuncu"} zar attı.`
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, {merge:true});
+        }catch(err){
+          console.error("Online zar state yazılamadı:", err);
+        }
+      }, 1900);
+    }
+  };
+
+  // Classic tarafında da zar emoji yerine noktalı CSS olsun.
+  resetDiceFacesVisual();
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);

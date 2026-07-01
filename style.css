@@ -5537,3 +5537,76 @@ html, body{
     font-size:13px !important;
   }
 }
+
+
+/* ===== V39.1 REAL DICE DOTS + ONLINE BOARD FIX ===== */
+
+.dice-face{
+  position:relative !important;
+  font-size:0 !important;
+  color:transparent !important;
+}
+
+.dice-face::before{
+  content:"";
+  position:absolute;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#111827;
+  box-shadow:none;
+}
+
+.dice-face.dice-1::before{
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+.dice-face.dice-2::before{
+  left:18%;
+  top:18%;
+  box-shadow:34px 34px 0 #111827;
+}
+
+.dice-face.dice-3::before{
+  left:18%;
+  top:18%;
+  box-shadow:17px 17px 0 #111827,34px 34px 0 #111827;
+}
+
+.dice-face.dice-4::before{
+  left:18%;
+  top:18%;
+  box-shadow:34px 0 0 #111827,0 34px 0 #111827,34px 34px 0 #111827;
+}
+
+.dice-face.dice-5::before{
+  left:18%;
+  top:18%;
+  box-shadow:34px 0 0 #111827,17px 17px 0 #111827,0 34px 0 #111827,34px 34px 0 #111827;
+}
+
+.dice-face.dice-6::before{
+  left:18%;
+  top:16%;
+  box-shadow:34px 0 0 #111827,0 17px 0 #111827,34px 17px 0 #111827,0 34px 0 #111827,34px 34px 0 #111827;
+}
+
+/* Mobilde zar noktaları orantılı küçülsün */
+@media (hover:none) and (pointer:coarse){
+  .dice-face::before{
+    width:5px !important;
+    height:5px !important;
+  }
+
+  .dice-face.dice-2::before{box-shadow:15px 15px 0 #111827 !important}
+  .dice-face.dice-3::before{box-shadow:7.5px 7.5px 0 #111827,15px 15px 0 #111827 !important}
+  .dice-face.dice-4::before{box-shadow:15px 0 0 #111827,0 15px 0 #111827,15px 15px 0 #111827 !important}
+  .dice-face.dice-5::before{box-shadow:15px 0 0 #111827,7.5px 7.5px 0 #111827,0 15px 0 #111827,15px 15px 0 #111827 !important}
+  .dice-face.dice-6::before{box-shadow:15px 0 0 #111827,0 7.5px 0 #111827,15px 7.5px 0 #111827,0 15px 0 #111827,15px 15px 0 #111827 !important}
+}
+
+.online-character-token{
+  z-index:60 !important;
+}
