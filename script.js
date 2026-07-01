@@ -1,0 +1,3459 @@
+window.addEventListener("DOMContentLoaded", () => {
+  const $ = (id) => document.getElementById(id);
+
+  const screens = {
+    intro: $("intro"),
+    menu: $("menu"),
+    setup: $("setup"),
+    game: $("game")
+  };
+
+  const boardSpaces = [
+    {n:"BAŞLANGIÇ",t:"corner",icon:"🏁"},
+    {n:"Nişantaşı",t:"property",c:"#22c55e",price:320},
+    {n:"Etiler",t:"property",c:"#22c55e",price:330},
+    {n:"Park",t:"empty",icon:"🌳"},
+    {n:"Levent",t:"property",c:"#22c55e",price:340},
+    {n:"Metro",t:"transport",icon:"🚇",price:25,rent:10},
+    {n:"ŞANS",t:"chance",icon:"❓"},
+    {n:"Bebek",t:"property",c:"#2563eb",price:350},
+    {n:"Lüks Vergi",t:"tax",icon:"💎",fee:150},
+    {n:"Göktürk",t:"property",c:"#2563eb",price:400},
+    {n:"KODESE GİR",t:"corner",icon:"⛓️"},
+    {n:"Kasımpaşa",t:"property",c:"#7c2d12",price:80},
+    {n:"Meydan",t:"empty",icon:"🏛️"},
+    {n:"Gülbağ",t:"property",c:"#7c2d12",price:60},
+    {n:"Elektrik Faturası",t:"tax",icon:"⚡",fee:50},
+    {n:"Tramvay",t:"transport",icon:"🚋",price:25,rent:10},
+    {n:"Kağıthane",t:"property",c:"#3b82f6",price:100},
+    {n:"ŞANS",t:"chance",icon:"❓"},
+    {n:"Sirkeci",t:"property",c:"#3b82f6",price:120},
+    {n:"Eminönü",t:"property",c:"#3b82f6",price:140},
+    {n:"HAPİS ZİYARETİ",t:"corner",icon:"👮"},
+    {n:"Göztepe",t:"property",c:"#ec4899",price:160},
+    {n:"Genel Vergi",t:"tax",icon:"🏛️",fee:200},
+    {n:"Söğütlüçeşme",t:"property",c:"#ec4899",price:180},
+    {n:"Karaköy",t:"property",c:"#ec4899",price:200},
+    {n:"Otobüs",t:"transport",icon:"🚌",price:25,rent:10},
+    {n:"Şişli",t:"property",c:"#f97316",price:220},
+    {n:"Kafe",t:"empty",icon:"☕"},
+    {n:"Harbiye",t:"property",c:"#f97316",price:240},
+    {n:"Beyoğlu",t:"property",c:"#f97316",price:250},
+    {n:"ÜCRETSİZ OTOPARK",t:"corner",icon:"🅿️"},
+    {n:"Beşiktaş",t:"property",c:"#ef4444",price:260},
+    {n:"ŞANS",t:"chance",icon:"❓"},
+    {n:"Taksim",t:"property",c:"#ef4444",price:270},
+    {n:"Mecidiyeköy",t:"property",c:"#ef4444",price:280},
+    {n:"Vapur",t:"transport",icon:"⛴️",price:25,rent:10},
+    {n:"Yeniköy",t:"property",c:"#eab308",price:290},
+    {n:"Tarabya",t:"property",c:"#eab308",price:300},
+    {n:"Su Faturası",t:"tax",icon:"💧",fee:75},
+    {n:"Caddebostan",t:"property",c:"#eab308",price:310}
+  ];
+
+  const propertyStats = {
+    "Gülbağ": [60,6,30,90,210,330,450,50],
+    "Kasımpaşa": [80,8,40,120,280,440,600,50],
+    "Kağıthane": [100,10,50,150,350,550,750,50],
+    "Sirkeci": [120,12,60,180,420,660,900,50],
+    "Eminönü": [140,14,70,210,490,770,1050,50],
+    "Göztepe": [160,16,80,240,560,880,1200,100],
+    "Söğütlüçeşme": [180,18,90,270,630,990,1350,100],
+    "Karaköy": [200,20,100,300,700,1100,1500,100],
+    "Şişli": [220,22,110,330,770,1210,1650,100],
+    "Harbiye": [240,24,120,360,840,1320,1800,100],
+    "Beyoğlu": [250,25,125,375,875,1375,1875,100],
+    "Beşiktaş": [260,26,130,390,910,1430,1950,150],
+    "Taksim": [270,27,135,405,945,1485,2025,150],
+    "Mecidiyeköy": [280,28,140,420,980,1540,2100,150],
+    "Yeniköy": [290,29,145,435,1015,1595,2175,150],
+    "Tarabya": [300,30,150,450,1050,1650,2250,150],
+    "Caddebostan": [310,31,155,465,1085,1705,2325,150],
+    "Nişantaşı": [320,32,160,480,1120,1760,2400,200],
+    "Etiler": [330,33,165,495,1155,1815,2475,200],
+    "Levent": [340,34,170,510,1190,1870,2550,200],
+    "Bebek": [350,35,175,525,1225,1925,2625,200],
+    "Göktürk": [400,40,200,600,1400,2200,3000,200]
+  };
+
+    const playlist = [
+    { title:"Neredesin", artist:"Ezhel", file:"assets/sounds/music1.mp3", cover:"assets/covers/music1.jpg" },
+    { title:"Влюбился в неё", artist:"Onlife & The Smi", file:"assets/sounds/music3.mp3", cover:"assets/covers/music3.jpg" },
+    { title:"Billionaire", artist:"Otilia", file:"assets/sounds/music4.mp3", cover:"assets/covers/music4.jpg" },
+    { title:"Gül ki Sevgilim", artist:"Oğuzhan Koç", file:"assets/sounds/music2.mp3", cover:"assets/covers/music2.jpg" }
+  ];
+
+  let selectedPlayerCount = 2;
+  let players = [];
+  let activePlayerIndex = 0;
+  let currentTrack = 0;
+  let isPlaying = false;
+  let gameStartedAt = null;
+  let gameTimer = null;
+  let currentOpenSpaceIndex = null;
+  let currentBuyerIndex = null;
+  let pendingRent = null;
+  let pendingChancePlayerIndex = null;
+  let chanceCardActive = false;
+  let buildMode = null;
+  let hasRolledThisTurn = false;
+  let canEndTurn = false;
+  let auctionState = null;
+  let activityLog = [];
+  let suppressFailUntil = 0;
+
+  const sfx = {
+    buy: new Audio("assets/sounds/buy.mp3"),
+    click: new Audio("assets/sounds/click.mp3"),
+    card: new Audio("assets/sounds/card.mp3"),
+    dice: new Audio("assets/sounds/dice.mp3"),
+    jail: new Audio("assets/sounds/jail.mp3"),
+    fail: new Audio("assets/sounds/fail.mp3"),
+    step: new Audio("assets/sounds/step.mp3"),
+    win: new Audio("assets/sounds/win.mp3"),
+    money: new Audio("assets/sounds/money.mp3"),
+    lose: new Audio("assets/sounds/lose.mp3"),
+    auction: new Audio("assets/sounds/auction.mp3")
+  };
+
+  const loopSounds = new Set(["dice", "step"]);
+
+  Object.entries(sfx).forEach(([name, audio]) => {
+    audio.volume = name === "step" ? 0.28 : 0.45;
+    audio.preload = "auto";
+    audio.loop = loopSounds.has(name);
+  });
+
+  function playSound(name){
+    if(name === "fail" && Date.now() < suppressFailUntil) return;
+    if(!settings.effects) return;
+    const audio = sfx[name];
+    if(!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.loop = false;
+    audio.play().catch(() => {});
+  }
+
+  function startLoopSound(name){
+    if(!settings.effects) return;
+    const audio = sfx[name];
+    if(!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.loop = true;
+    audio.play().catch(() => {});
+  }
+
+  function stopSound(name){
+    const audio = sfx[name];
+    if(!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  }
+
+  function stopAllLoopSounds(){
+    ["dice","step"].forEach(stopSound);
+  }
+
+  const settings = {
+    effects: true,
+    music: true,
+    volume: 75
+  };
+
+  function loadSettings(){
+    try{
+      const saved = JSON.parse(localStorage.getItem("barutpolySettings"));
+      if(saved){
+        settings.effects = saved.effects ?? true;
+        settings.music = saved.music ?? true;
+        settings.volume = saved.volume ?? 75;
+      }
+    }catch(e){}
+
+    applySettings();
+    refreshSettingsUI();
+  }
+
+  function saveSettings(){
+    localStorage.setItem("barutpolySettings", JSON.stringify(settings));
+  }
+
+  function applySettings(){
+    const master = Math.max(0, Math.min(100, settings.volume)) / 100;
+
+    Object.entries(sfx).forEach(([name, audio]) => {
+      audio.volume = name === "step" ? master * 0.45 : master * 0.75;
+    });
+
+    const musicAudio = $("musicAudio");
+    if(musicAudio) musicAudio.volume = settings.music ? master * 0.45 : 0;
+
+    const volumeBar = $("volumeBar");
+    if(volumeBar) volumeBar.value = settings.music ? String(master * 0.45) : "0";
+  }
+
+  function refreshSettingsUI(){
+    const effectsToggle = $("effectsToggle");
+    const musicToggleSetting = $("musicToggleSetting");
+    const slider = $("masterVolumeSlider");
+    const volumeValue = $("volumeValue");
+
+    if(effectsToggle){
+      effectsToggle.textContent = settings.effects ? "AÇIK" : "KAPALI";
+      effectsToggle.classList.toggle("off", !settings.effects);
+    }
+
+    if(musicToggleSetting){
+      musicToggleSetting.textContent = settings.music ? "AÇIK" : "KAPALI";
+      musicToggleSetting.classList.toggle("off", !settings.music);
+    }
+
+    if(slider) slider.value = settings.volume;
+    if(volumeValue) volumeValue.textContent = `${settings.volume}%`;
+  }
+
+  function openSettings(){
+    const overlay = $("settingsOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("hidden");
+    showSettingsPage("settingsHome");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeSettings(){
+    const overlay = $("settingsOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 280);
+  }
+
+  function showSettingsPage(pageId){
+    ["settingsHome","soundSettingsPage","screenSettingsPage"].forEach(id => {
+      $(id)?.classList.toggle("active", id === pageId);
+    });
+  }
+
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen?.();
+    }else{
+      document.exitFullscreen?.();
+    }
+  }
+
+
+
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => { s?.classList.add("hidden"); s?.classList.remove("visible"); s?.classList.remove("gameVisible"); });
+    const screen = screens[name];
+    screen?.classList.remove("hidden");
+    if(name === "game"){
+      requestAnimationFrame(() => screen?.classList.add("gameVisible"));
+    }else{
+      requestAnimationFrame(() => screen?.classList.add("visible"));
+    }
+  }
+
+  function setupLogo(){
+    const logo = $("boardLogo");
+    const fallback = $("boardFallbackLogo");
+    if(!logo || !fallback) return;
+
+    const paths = [
+      "assets/images/barutpoly.png",
+      "./assets/images/barutpoly.png",
+      "assets/İmages/barutpoly.png",
+      "./assets/İmages/barutpoly.png",
+      "assets/images/barutpoly-logo.png",
+      "./assets/images/barutpoly-logo.png"
+    ];
+
+    let i = 0;
+    logo.addEventListener("load", () => {
+      logo.style.display = "block";
+      fallback.style.display = "none";
+    });
+    logo.addEventListener("error", () => {
+      i++;
+      if(i < paths.length) logo.src = paths[i];
+      else {
+        logo.style.display = "none";
+        fallback.style.display = "block";
+      }
+    });
+    logo.src = paths[0];
+  }
+
+  function renderNameInputs(){
+    const holder = $("nameInputs");
+    if(!holder) return;
+    holder.innerHTML = "";
+
+    for(let i=1;i<=selectedPlayerCount;i++){
+      const wrap = document.createElement("div");
+      wrap.className = "player-setup-card";
+
+      wrap.innerHTML = `
+        <div class="player-setup-head">
+          <span class="player-setup-dot p${i}"></span>
+          <b>OYUNCU ${i}</b>
+        </div>
+
+        <input class="player-name" type="text" value="Oyuncu ${i}">
+
+        <div class="player-type-switch">
+          <button type="button" class="type-choice active" data-type="human">İnsan</button>
+          <button type="button" class="type-choice" data-type="bot">Bot 🤖</button>
+          <input class="player-type" type="hidden" value="human">
+        </div>
+      `;
+
+      const choices = wrap.querySelectorAll(".type-choice");
+      const hidden = wrap.querySelector(".player-type");
+
+      choices.forEach(btn => {
+        btn.addEventListener("click", () => {
+          choices.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          hidden.value = btn.dataset.type;
+          playSound("click");
+        });
+      });
+
+      holder.appendChild(wrap);
+    }
+  }
+
+  function createPlayers(){
+    const inputs = [...document.querySelectorAll(".player-name")];
+    const types = [...document.querySelectorAll(".player-type")];
+
+    players = inputs.map((input,index) => ({
+      name: input.value.trim() || `Oyuncu ${index + 1}`,
+      money: 1500,
+      position: 0,
+      owned: [],
+      housesAvailable: 12,
+      hotelsAvailable: 4,
+      jailTurns: 0,
+      isBot: types[index]?.value === "bot",
+      className: `p${index + 1}`
+    }));
+
+    activePlayerIndex = 0;
+    hasRolledThisTurn = false;
+    canEndTurn = false;
+  }
+
+  function tileHTML(space){
+    if(space.t === "property"){
+      return `<div class="bar" style="background:${space.c}"></div><div class="tile-name">${space.n}</div><div class="tile-price">${space.price} TL</div>`;
+    }
+    if(space.t === "transport"){
+      return `<div class="tile-icon">${space.icon}</div><div class="tile-name">${space.n}</div><div class="tile-price">${space.price} TL</div>`;
+    }
+    if(space.t === "tax"){
+      return `<div class="tile-icon">${space.icon}</div><div class="tile-name">${space.n}</div><div class="tile-price">${space.fee} TL</div>`;
+    }
+    return `<div class="tile-icon">${space.icon || ""}</div><div class="tile-name">${space.n}</div>`;
+  }
+
+  function isLongName(name){
+    return name.length > 15 || name.includes("Faturası") || name.includes("Metrosu") || name.includes("Tramvayı") || name.includes("Vapuru") || name.includes("Havalimanı");
+  }
+
+  function getTileRect(index){
+    const corner = 11.4;
+    const small = (100 - corner * 2) / 9;
+    let x=0,y=0,w=small,h=small;
+
+    if(index === 0){ x=100-corner; y=100-corner; w=corner; h=corner; }
+    else if(index < 10){ x=100-corner-index*small; y=100-corner; w=small; h=corner; }
+    else if(index === 10){ x=0; y=100-corner; w=corner; h=corner; }
+    else if(index < 20){ x=0; y=100-corner-(index-10)*small; w=corner; h=small; }
+    else if(index === 20){ x=0; y=0; w=corner; h=corner; }
+    else if(index < 30){ x=corner+(index-21)*small; y=0; w=small; h=corner; }
+    else if(index === 30){ x=100-corner; y=0; w=corner; h=corner; }
+    else { x=100-corner; y=corner+(index-31)*small; w=corner; h=small; }
+
+    return {x,y,w,h};
+  }
+
+  function createBoard(){
+    const board = $("board");
+    if(!board) return;
+
+    board.querySelectorAll(".tile").forEach(t => t.remove());
+
+    boardSpaces.forEach((space,index) => {
+      const rect = getTileRect(index);
+      const tile = document.createElement("div");
+      tile.className = `tile ${space.t}`;
+      if(isLongName(space.n)) tile.classList.add("small-text");
+      tile.style.left = `${rect.x}%`;
+      tile.style.top = `${rect.y}%`;
+      tile.style.width = `${rect.w}%`;
+      tile.style.height = `${rect.h}%`;
+      tile.innerHTML = tileHTML(space);
+      tile.addEventListener("click", () => openCard(space, index));
+      board.appendChild(tile);
+    });
+  }
+
+  function createTokens(){
+    const layer = $("tokenLayer");
+    if(!layer) return;
+    layer.innerHTML = "";
+    players.forEach((p,index) => {
+      const token = document.createElement("div");
+      token.id = `playerToken${index}`;
+      token.className = `player-token ${p.className}`;
+      layer.appendChild(token);
+    });
+    updateTokens();
+  }
+
+  function getTokenPoint(position,index){
+    const r = getTileRect(position);
+    const offsets = [[-2.2,-2.2],[2.2,-2.2],[-2.2,2.2],[2.2,2.2],[0,-2.6],[0,2.6]];
+    const o = offsets[index % offsets.length];
+    return {left:r.x + r.w/2 + o[0], top:r.y + r.h/2 + o[1]};
+  }
+
+  function updateTokens(){
+    players.forEach((p,index) => {
+      const token = $(`playerToken${index}`);
+      if(!token) return;
+      const point = getTokenPoint(p.position,index);
+      token.style.left = `${point.left}%`;
+      token.style.top = `${point.top}%`;
+    });
+  }
+
+
+  function setActiveToken(){
+    players.forEach((p,index) => {
+      const token = $(`playerToken${index}`);
+      if(!token) return;
+      token.classList.toggle("active-token", index === activePlayerIndex);
+    });
+  }
+
+  function moveTokenVisual(playerIndex){
+    const token = $(`playerToken${playerIndex}`);
+    if(!token) return;
+    const point = getTokenPoint(players[playerIndex].position, playerIndex);
+    token.classList.remove("moving");
+    token.style.left = `${point.left}%`;
+    token.style.top = `${point.top}%`;
+    void token.offsetWidth;
+    token.classList.add("moving");
+    setTimeout(() => token.classList.remove("moving"), 240);
+  }
+
+  async function movePlayerStepByStep(playerIndex, steps){
+    const player = players[playerIndex];
+
+    startLoopSound("step");
+
+    for(let i = 0; i < steps; i++){
+      player.position = (player.position + 1) % boardSpaces.length;
+      moveTokenVisual(playerIndex);
+      await wait(330);
+    }
+
+    stopSound("step");
+    playSound("click");
+  }
+
+  function wait(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+
+  function getPlayerColor(index){
+    const colors = ["#2563eb","#ef4444","#22c55e","#facc15","#ec4899","#06b6d4"];
+    return colors[index % colors.length];
+  }
+
+  function getOwnerIndex(spaceIndex){
+    return players.findIndex(p => p.owned.includes(spaceIndex));
+  }
+
+  function getSpacePurchasePrice(space){
+    if(space.t === "property") return space.price || 0;
+    if(space.t === "transport") return space.price || 25;
+    return 0;
+  }
+
+  function getSpaceRent(space){
+    if(space.t === "property"){
+      const stats = propertyStats[space.n];
+      return stats ? stats[1] : Math.max(5, Math.round((space.price || 100) * 0.1));
+    }
+    if(space.t === "transport") return space.rent || 10;
+    return 0;
+  }
+
+  function refreshTileOwnership(){
+    document.querySelectorAll(".tile").forEach((tile, index) => {
+      tile.classList.remove("owned");
+      tile.style.removeProperty("--owner-color");
+      tile.querySelector(".owner-badge")?.remove();
+
+      const ownerIndex = getOwnerIndex(index);
+      if(ownerIndex >= 0){
+        const color = getPlayerColor(ownerIndex);
+        tile.classList.add("owned");
+        tile.style.setProperty("--owner-color", color);
+        const badge = document.createElement("div");
+        badge.className = "owner-badge";
+        badge.style.setProperty("--owner-color", color);
+        tile.appendChild(badge);
+      }
+    });
+  }
+
+
+  function playPaymentSound(){
+    playSound("fail");
+  }
+
+  function showPaymentPopup(playerIndex, amount){
+    showMoneyPopup(playerIndex, -Math.abs(amount));
+  }
+
+
+  function isBuyAllowedForCurrentCard(index){
+    if(index === null) return false;
+    if(currentBuyerIndex === null) return false;
+    if(currentBuyerIndex !== activePlayerIndex) return false;
+    if(!hasRolledThisTurn) return false;
+    const player = players[currentBuyerIndex];
+    return player && player.position === index;
+  }
+
+  function canBuySpace(space){
+    return space && (space.t === "property" || space.t === "transport");
+  }
+
+  function renderPlayers(){
+    const list = $("playersList");
+    if(!list) return;
+    const colors = ["blue","red","green","yellow","pink","cyan"];
+    list.innerHTML = "";
+    players.forEach((p,index) => {
+      const row = document.createElement("div");
+      row.className = `player-row ${colors[index] || "blue"} ${index === activePlayerIndex ? "active" : ""}`;
+      const jailTag = p.jailTurns > 0 ? `<em class="jail-tag">⛓️ ${p.jailTurns}</em>` : "";
+      const botTag = p.isBot ? `<em class="bot-tag">🤖 BOT</em>` : "";
+      row.innerHTML = `<span></span><b>${p.name}${botTag}${jailTag}</b><strong>${p.money} TL</strong>`;
+      list.appendChild(row);
+    });
+  }
+
+
+  function updateTurnButtons(){
+    const rollBtn = $("rollDiceBtn");
+    const endBtn = $("endTurnBtn");
+
+    if(rollBtn) rollBtn.disabled = hasRolledThisTurn || (players[activePlayerIndex]?.jailTurns > 0);
+    if(endBtn) endBtn.disabled = !canEndTurn;
+  }
+
+  function finishTurn(){
+    if(pendingRent && !pendingRent.paid){
+      showRentWarning();
+      return;
+    }
+
+    if(!canEndTurn) return;
+
+    closeCard();
+
+    activePlayerIndex = (activePlayerIndex + 1) % players.length;
+    hasRolledThisTurn = false;
+    canEndTurn = false;
+    currentOpenSpaceIndex = null;
+    currentBuyerIndex = null;
+
+    const nextPlayer = players[activePlayerIndex];
+    if(nextPlayer && nextPlayer.jailTurns > 0){
+      nextPlayer.jailTurns -= 1;
+      hasRolledThisTurn = true;
+      canEndTurn = true;
+      $("diceTotal").textContent = `${nextPlayer.name} hapiste. Kalan tur: ${nextPlayer.jailTurns}`;
+      addActivity(`⛓️ ${nextPlayer.name} hapiste bekledi. Kalan tur: ${nextPlayer.jailTurns}`);
+      playSound("jail");
+    }else{
+      $("diceTotal").textContent = "Sıra yeni oyuncuda.";
+      addActivity(`➡️ Sıra ${nextPlayer.name} oyuncusunda.`);
+      playSound("click");
+    }
+    updatePanel();
+    updateTurnButtons();
+    renderLeftPlayerPanel();
+  }
+
+
+  function renderLeftPlayerPanel(){
+    if(!players.length) return;
+    const p = players[activePlayerIndex];
+    const panel = $("leftPlayerPanel");
+    const colorNames = ["active-blue","active-red","active-green","active-yellow","active-pink","active-cyan"];
+
+    if(panel){
+      colorNames.forEach(c => panel.classList.remove(c));
+      panel.classList.add(colorNames[activePlayerIndex] || "active-blue");
+    }
+
+    if($("leftPanelTitle")) $("leftPanelTitle").textContent = `${p.name} ALANI`;
+    if($("readyHouseCount")) $("readyHouseCount").textContent = p.housesAvailable ?? 12;
+    if($("readyHotelCount")) $("readyHotelCount").textContent = p.hotelsAvailable ?? 4;
+    if($("ownedCardCount")) $("ownedCardCount").textContent = p.owned.length;
+
+    const holder = $("miniOwnedCards");
+    if(!holder) return;
+    holder.innerHTML = "";
+
+    p.owned.slice(0,8).forEach((index, deckIndex) => {
+      const space = boardSpaces[index];
+      const card = document.createElement("div");
+      card.className = "mini-owned-card";
+      card.title = space.n;
+      card.style.setProperty("--card-color", space.c || "#6d28d9");
+      card.style.setProperty("--deck-x", `${(deckIndex - Math.min(p.owned.length,8) / 2) * 10}px`);
+      card.style.setProperty("--deck-rot", `${(deckIndex - 3) * 4}deg`);
+      holder.appendChild(card);
+    });
+  }
+
+  function openSideInfo(type){
+    const overlay = $("sideInfoOverlay");
+    const title = $("sideInfoTitle");
+    const body = $("sideInfoBody");
+    if(!overlay || !title || !body) return;
+
+    const p = players[activePlayerIndex];
+
+    if(type === "properties"){
+      title.textContent = "⌂ Mülklerim";
+      if(!p || p.owned.length === 0){
+        body.innerHTML = `<div class="empty-info">Henüz mülkün yok.</div>`;
+      }else{
+        body.innerHTML = `<div class="owned-list">${
+          p.owned.map(index => {
+            const s = boardSpaces[index];
+            return `<div class="owned-list-card" style="--card-color:${s.c || '#6d28d9'}">
+              <b>${s.n}</b>
+              <small>${s.t === 'transport' ? 'Ulaşım' : 'Semt'}</small><br>
+              <small>Değer: ${getSpacePurchasePrice(s)} TL</small><br>
+              <small>Kira: ${getSpaceRent(s)} TL</small>
+            </div>`;
+          }).join("")
+        }</div>`;
+      }
+    }else{
+      title.textContent = "▣ Kartlar";
+      body.innerHTML = `
+        <div class="empty-info">
+          Şans kartları ve özel kart destesi sonraki sürümde burada açılacak.
+        </div>
+      `;
+    }
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeSideInfo(){
+    const overlay = $("sideInfoOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 250);
+  }
+
+
+  function addActivity(text){
+    activityLog.unshift(text);
+    activityLog = activityLog.slice(0, 12);
+
+    const feed = $("activityFeed");
+    if(!feed) return;
+
+    feed.innerHTML = "";
+    activityLog.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "activity-item";
+      div.textContent = item;
+      feed.appendChild(div);
+    });
+  }
+
+
+
+  function countPlayerBuildings(playerIndex){
+    const p = players[playerIndex];
+    let houses = 0;
+    let hotels = 0;
+
+    if(p?.buildings){
+      Object.values(p.buildings).forEach(b => {
+        if(b.hotel) hotels += 1;
+        else houses += b.houses || 0;
+      });
+    }
+
+    return {houses, hotels};
+  }
+
+  function getGameTimeText(){
+    return $("gameClock")?.textContent || "00:00:00";
+  }
+
+  function spawnWinnerConfetti(){
+    const colors = ["#f6c453","#a855f7","#22c55e","#ef4444","#38bdf8","#ffffff"];
+    for(let i=0;i<90;i++){
+      const c = document.createElement("div");
+      c.className = "confetti-piece";
+      c.style.left = `${Math.random()*100}vw`;
+      c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDelay = `${Math.random()*0.75}s`;
+      c.style.transform = `rotate(${Math.random()*180}deg)`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 3600);
+    }
+  }
+
+  function showWinnerScreen(playerIndex){
+    const overlay = $("winnerOverlay");
+    const player = players[playerIndex];
+    if(!overlay || !player || overlay.classList.contains("show")) return;
+
+    const b = countPlayerBuildings(playerIndex);
+
+    $("winnerName").textContent = `${player.name} KAZANDI!`;
+    $("winnerMoney").textContent = `${player.money} TL`;
+    $("winnerOwned").textContent = player.owned.length;
+    $("winnerHouses").textContent = b.houses;
+    $("winnerHotels").textContent = b.hotels;
+    $("winnerTime").textContent = getGameTimeText();
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    playSound("win");
+    spawnWinnerConfetti();
+
+    if(typeof addActivity === "function"){
+      addActivity(`🏆 ${player.name} oyunu kazandı!`);
+    }
+  }
+
+  function checkWinnerScreen(){
+    if(players.length <= 1) return;
+    const alive = players
+      .map((p, i) => ({p, i}))
+      .filter(x => x.p.money > 0);
+
+    if(alive.length === 1){
+      showWinnerScreen(alive[0].i);
+    }
+  }
+
+
+  function updatePanel(){
+    if(!players.length) return;
+    const p = players[activePlayerIndex];
+    const location = boardSpaces[p.position]?.n || "-";
+    $("turnPill").textContent = `Sıra: ${p.name}`;
+    $("activeMoney").textContent = `${p.money} TL`;
+    $("activeLocation").textContent = location;
+    $("ownedCount").textContent = p.owned.length;
+    renderPlayers();
+    setActiveToken();
+    refreshTileOwnership();
+    updateTurnButtons();
+    checkWinnerScreen();
+  }
+
+  function startGame(){
+    createPlayers();
+    createBoard();
+    createTokens();
+    refreshTileOwnership();
+    renderDice(1,1);
+    updatePanel();
+    showScreen("game");
+    $("setup").classList.add("hidden");
+    pauseMusic();
+    startClock();
+  }
+
+  function renderOneDie(el, value){
+    if(!el) return;
+
+    const spots = {
+      1:["mc"],
+      2:["tl","br"],
+      3:["tl","mc","br"],
+      4:["tl","tr","bl","br"],
+      5:["tl","tr","mc","bl","br"],
+      6:["tl","tr","ml","mr","bl","br"]
+    };
+
+    el.innerHTML = "";
+    (spots[value] || []).forEach(pos => {
+      const pip = document.createElement("span");
+      pip.className = `pip ${pos}`;
+      el.appendChild(pip);
+    });
+  }
+
+  function renderDice(d1,d2){
+    renderOneDie($("diceOne"), d1);
+    renderOneDie($("diceTwo"), d2);
+  }
+
+  function showMoneyPopup(playerIndex, amount){
+    const rows = document.querySelectorAll(".player-row");
+    const row = rows[playerIndex];
+
+    const popup = document.createElement("div");
+    popup.className = amount >= 0 ? "screen-money-popup plus" : "screen-money-popup minus";
+    popup.textContent = amount >= 0 ? `+${amount} TL` : `${amount} TL`;
+
+    if(row){
+      const rect = row.getBoundingClientRect();
+      popup.style.left = `${rect.right - 88}px`;
+      popup.style.top = `${rect.top + rect.height / 2}px`;
+    }else{
+      popup.style.right = "390px";
+      popup.style.top = "220px";
+    }
+
+    document.body.appendChild(popup);
+
+    if(amount > 0) playSound("money");
+
+    setTimeout(() => popup.remove(), 1400);
+  }
+
+  async function rollDice(){
+    if(!players.length) return;
+    if(hasRolledThisTurn) return;
+
+    if(players[activePlayerIndex]?.jailTurns > 0){
+      $("diceTotal").textContent = `${players[activePlayerIndex].name} hapiste. Turunu bitir.`;
+      canEndTurn = true;
+      updateTurnButtons();
+      updatePanel();
+      return;
+    }
+
+    hasRolledThisTurn = true;
+    canEndTurn = false;
+    updateTurnButtons();
+
+    const btn = $("rollDiceBtn");
+    const diceBox = document.querySelector(".dice-box");
+    btn.disabled = true;
+    btn.classList.add("rolling-btn");
+    diceBox?.classList.add("rolling-glow");
+
+    $("diceTotal").textContent = "Zar atılıyor...";
+    $("diceTotal").classList.add("rolling-text");
+    $("diceOne").classList.add("rolling");
+    $("diceTwo").classList.add("rolling");
+    startLoopSound("dice");
+
+    const rollDuration = 900;
+    const startedAt = Date.now();
+
+    while(Date.now() - startedAt < rollDuration){
+      renderDice(rand(1,6), rand(1,6));
+      await wait(75);
+    }
+
+    const d1 = rand(1,6);
+    const d2 = rand(1,6);
+    const total = d1 + d2;
+
+    renderDice(d1,d2);
+    $("diceOne").classList.remove("rolling");
+    $("diceTwo").classList.remove("rolling");
+    $("diceTotal").classList.remove("rolling-text");
+    stopSound("dice");
+
+    const playerIndex = activePlayerIndex;
+    const player = players[playerIndex];
+    const oldPos = player.position;
+    const rawNewPos = oldPos + total;
+    const passedStart = rawNewPos >= boardSpaces.length;
+
+    $("diceTotal").textContent = `Toplam: ${total}`;
+    addActivity(`🎲 ${player.name} ${total} attı.`);
+    await movePlayerStepByStep(playerIndex, total);
+
+    const landedIndex = player.position;
+
+    if(passedStart){
+      player.money += 200;
+      $("diceTotal").textContent = `Toplam: ${total} | +200 TL`;
+      showMoneyPopup(playerIndex, 200);
+      addActivity(`💰 ${player.name} başlangıçtan geçti, 200 TL aldı.`);
+    }
+
+    afterPlayerLands(playerIndex, landedIndex);
+
+    await wait(500);
+
+    canEndTurn = true;
+    updatePanel();
+
+    diceBox?.classList.remove("rolling-glow");
+    btn.classList.remove("rolling-btn");
+    updateTurnButtons();
+  }
+
+  function rand(min,max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function addCardRow(label,value){
+    const row = document.createElement("div");
+    row.className = "card-row";
+    row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    $("cardRows").appendChild(row);
+  }
+
+  function openCard(space, index = null){
+    currentOpenSpaceIndex = index;
+    currentBuyerIndex = activePlayerIndex;
+    playSound("card");
+    const overlay = $("propertyOverlay");
+    overlay.classList.remove("hidden","closing");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    $("cardTitle").textContent = space.n;
+    $("cardColorBar").style.background = space.c || "#f6c453";
+    $("cardIcon").textContent = space.icon || "🏠";
+    $("cardRows").innerHTML = "";
+    document.querySelectorAll(".card-owner-line, .card-warning-line, .rent-info-line, .rent-warning-line").forEach(el => el.remove());
+    $("buyBtn").disabled = false;
+    $("buyBtn").classList.remove("rent-pay-mode");
+
+    if(space.t === "property"){
+      $("cardType").textContent = "MÜLK KARTI";
+      const s = propertyStats[space.n];
+      [["Satın Alma",s[0]],["Boş Kira",s[1]],["1 Ev",s[2]],["2 Ev",s[3]],["3 Ev",s[4]],["4 Ev",s[5]],["Otel",s[6]],["Ev Maliyeti",s[7]]]
+        .forEach(([a,b]) => addCardRow(a,`${b} TL`));
+      const ownerIndex = index !== null ? getOwnerIndex(index) : -1;
+      const ownerLine = document.createElement("div");
+      ownerLine.className = "card-owner-line";
+
+      if(ownerIndex >= 0){
+        ownerLine.innerHTML = `Sahibi: <strong>${players[ownerIndex].name}</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(ownerIndex !== activePlayerIndex && pendingRent && pendingRent.spaceIndex === index && !pendingRent.paid){
+          const rentLine = document.createElement("div");
+          rentLine.className = "rent-info-line";
+          rentLine.innerHTML = `<strong>${pendingRent.rent} TL</strong> kira öde`;
+          $("cardRows").before(rentLine);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").classList.add("rent-pay-mode");
+          $("buyBtn").textContent = `${pendingRent.rent} TL KİRA ÖDE`;
+        }else{
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").classList.remove("rent-pay-mode");
+          $("buyBtn").textContent = ownerIndex === activePlayerIndex ? "BU MÜLK SENİN" : "SATIN ALINMIŞ";
+        }
+      }else{
+        ownerLine.innerHTML = `Sahibi: <strong>Yok</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(isBuyAllowedForCurrentCard(index)){
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").textContent = "SATIN AL";
+        }else{
+          const warn = document.createElement("div");
+          warn.className = "card-warning-line";
+          warn.textContent = "Satın almak için bu kareye zarla gelmelisin.";
+          $("cardRows").before(warn);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "BURADAN SATIN ALAMAZSIN";
+        }
+      }
+    }else if(space.t === "transport"){
+      $("cardType").textContent = "ULAŞIM KARTI";
+      addCardRow("Satın Alma","25 TL");
+      addCardRow("Kira","10 TL");
+      const ownerIndex = index !== null ? getOwnerIndex(index) : -1;
+      const ownerLine = document.createElement("div");
+      ownerLine.className = "card-owner-line";
+
+      if(ownerIndex >= 0){
+        ownerLine.innerHTML = `Sahibi: <strong>${players[ownerIndex].name}</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(ownerIndex !== activePlayerIndex && pendingRent && pendingRent.spaceIndex === index && !pendingRent.paid){
+          const rentLine = document.createElement("div");
+          rentLine.className = "rent-info-line";
+          rentLine.innerHTML = `<strong>${pendingRent.rent} TL</strong> kira öde`;
+          $("cardRows").before(rentLine);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").classList.add("rent-pay-mode");
+          $("buyBtn").textContent = `${pendingRent.rent} TL KİRA ÖDE`;
+        }else{
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").classList.remove("rent-pay-mode");
+          $("buyBtn").textContent = ownerIndex === activePlayerIndex ? "BU ULAŞIM SENİN" : "SATIN ALINMIŞ";
+        }
+      }else{
+        ownerLine.innerHTML = `Sahibi: <strong>Yok</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(isBuyAllowedForCurrentCard(index)){
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").textContent = "ULAŞIMI SATIN AL";
+        }else{
+          const warn = document.createElement("div");
+          warn.className = "card-warning-line";
+          warn.textContent = "Satın almak için bu kareye zarla gelmelisin.";
+          $("cardRows").before(warn);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "BURADAN SATIN ALAMAZSIN";
+        }
+      }
+    }else if(space.t === "tax"){
+      $("cardType").textContent = "VERGİ / FATURA";
+      addCardRow("Ödenecek Tutar",`${space.fee} TL`);
+      $("buyBtn").style.display = "none";
+    }else if(space.t === "chance"){
+      $("cardType").textContent = "ŞANS KARESİ";
+      addCardRow("Aksiyon","Şans kartı çekilir");
+      $("buyBtn").style.display = "none";
+    }else{
+      $("cardType").textContent = "ÖZEL KARE";
+      if(space.n === "KODESE GİR"){
+        addCardRow("Aksiyon","Kodese gönderilir");
+      }else if(space.n === "HAPİS ZİYARETİ"){
+        addCardRow("Aksiyon","Sadece ziyaret");
+      }else{
+        addCardRow("Aksiyon","Bu karede beklenir");
+      }
+      $("buyBtn").style.display = "none";
+    }
+  }
+
+
+  /* ===== V34 AUCTION SYSTEM ===== */
+
+  function hidePropertyCardInstant(){
+    const overlay = $("propertyOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show","closing");
+    overlay.classList.add("hidden");
+  }
+
+  function shouldStartAuctionOnClose(){
+    if(currentOpenSpaceIndex === null) return false;
+    if(!hasRolledThisTurn) return false;
+    if(currentBuyerIndex !== activePlayerIndex) return false;
+
+    const space = boardSpaces[currentOpenSpaceIndex];
+    if(!canBuySpace(space)) return false;
+    if(getOwnerIndex(currentOpenSpaceIndex) >= 0) return false;
+    if(players[activePlayerIndex]?.position !== currentOpenSpaceIndex) return false;
+
+    return true;
+  }
+
+  function startAuction(spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space) return;
+
+    hidePropertyCardInstant();
+
+    auctionState = {
+      spaceIndex,
+      space,
+      currentPointer: 0,
+      highestBid: 0,
+      highestBidder: null,
+      passed: new Set(),
+      eligible: players.map((p, i) => i).filter(i => players[i].money > 0)
+    };
+
+    if(auctionState.eligible.length <= 1){
+      closeAuction(true);
+      return;
+    }
+
+    const overlay = $("auctionOverlay");
+    $("auctionPropertyName").textContent = `${space.n} müzayedeye çıktı!`;
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    playSound("auction");
+    if(typeof addActivity === "function"){
+      addActivity(`💰 ${space.n} müzayedeye çıktı.`);
+    }
+
+    renderAuction();
+  }
+
+  function getAuctionCurrentPlayerIndex(){
+    if(!auctionState) return null;
+    const available = auctionState.eligible.filter(i => !auctionState.passed.has(i));
+    if(!available.length) return null;
+
+    let guard = 0;
+    while(guard < auctionState.eligible.length){
+      const candidate = auctionState.eligible[auctionState.currentPointer % auctionState.eligible.length];
+      if(!auctionState.passed.has(candidate)) return candidate;
+      auctionState.currentPointer++;
+      guard++;
+    }
+
+    return available[0];
+  }
+
+  function renderAuction(){
+    if(!auctionState) return;
+
+    const current = getAuctionCurrentPlayerIndex();
+    const highestName = auctionState.highestBidder === null ? "Henüz teklif yok" : players[auctionState.highestBidder].name;
+
+    $("auctionHighestBid").textContent = `${auctionState.highestBid} TL`;
+    $("auctionHighestBidder").textContent = highestName;
+    $("auctionCurrentPlayer").textContent = current === null ? "-" : players[current].name;
+
+    const holder = $("auctionPlayers");
+    holder.innerHTML = "";
+
+    auctionState.eligible.forEach(i => {
+      const div = document.createElement("div");
+      div.className = `auction-player ${i === current ? "active" : ""} ${auctionState.passed.has(i) ? "passed" : ""}`;
+      div.innerHTML = `<b>${players[i].name}</b><span>${players[i].money} TL</span>`;
+      holder.appendChild(div);
+    });
+
+    const minNext10 = auctionState.highestBid + 10;
+    const minNext50 = auctionState.highestBid + 50;
+
+    $("bid10Btn").disabled = current === null || players[current].money < minNext10;
+    $("bid50Btn").disabled = current === null || players[current].money < minNext50;
+    $("passAuctionBtn").disabled = current === null;
+  }
+
+  function advanceAuctionTurn(){
+    if(!auctionState) return;
+    auctionState.currentPointer++;
+
+    const active = auctionState.eligible.filter(i => !auctionState.passed.has(i));
+
+    if(active.length === 0){
+      finishAuction();
+      return;
+    }
+
+    if(active.length === 1 && auctionState.highestBidder !== null){
+      finishAuction();
+      return;
+    }
+
+    renderAuction();
+  }
+
+  function placeAuctionBid(amount){
+    if(!auctionState) return;
+
+    const bidderIndex = getAuctionCurrentPlayerIndex();
+    if(bidderIndex === null) return;
+
+    const newBid = auctionState.highestBid + amount;
+    if(players[bidderIndex].money < newBid){
+      playSound("fail");
+      return;
+    }
+
+    auctionState.highestBid = newBid;
+    auctionState.highestBidder = bidderIndex;
+
+    if(typeof addActivity === "function"){
+      addActivity(`💰 ${players[bidderIndex].name}, ${auctionState.space.n} için ${newBid} TL teklif verdi.`);
+    }
+
+    playSound("click");
+    advanceAuctionTurn();
+  }
+
+  function passAuction(){
+    if(!auctionState) return;
+
+    const playerIndex = getAuctionCurrentPlayerIndex();
+    if(playerIndex === null) return;
+
+    auctionState.passed.add(playerIndex);
+
+    if(typeof addActivity === "function"){
+      addActivity(`✋ ${players[playerIndex].name} müzayedede pas geçti.`);
+    }
+
+    playSound("click");
+    advanceAuctionTurn();
+  }
+
+  function finishAuction(){
+    if(!auctionState) return;
+
+    const {spaceIndex, space, highestBid, highestBidder} = auctionState;
+
+    if(highestBidder !== null && highestBid > 0){
+      const winner = players[highestBidder];
+      winner.money -= highestBid;
+      winner.owned.push(spaceIndex);
+
+      showPaymentPopup(highestBidder, highestBid);
+      playSound("buy");
+
+      if(typeof addActivity === "function"){
+        addActivity(`🏆 ${winner.name}, ${space.n} mülkünü müzayededen ${highestBid} TL'ye aldı.`);
+      }
+
+      refreshTileOwnership();
+      updatePanel();
+    }else{
+      if(typeof addActivity === "function"){
+        addActivity(`🏦 ${space.n} satılmadı, bankada kaldı.`);
+      }
+    }
+
+    closeAuction(true);
+  }
+
+  function closeAuction(force=false){
+    const overlay = $("auctionOverlay");
+    if(!force && auctionState){
+      finishAuction();
+      return;
+    }
+
+    overlay?.classList.remove("show");
+    setTimeout(() => overlay?.classList.add("hidden"), 260);
+    auctionState = null;
+  }
+
+
+  function closeCard(){
+    if(pendingRent && !pendingRent.paid){
+      showRentWarning();
+      return;
+    }
+
+    if(shouldStartAuctionOnClose()){
+      startAuction(currentOpenSpaceIndex);
+      return;
+    }
+
+    const overlay = $("propertyOverlay");
+    overlay.classList.add("closing");
+    overlay.classList.remove("show");
+    setTimeout(() => {
+      overlay.classList.add("hidden");
+      overlay.classList.remove("closing");
+    },260);
+  }
+
+  function startClock(){
+    gameStartedAt = Date.now();
+    clearInterval(gameTimer);
+    gameTimer = setInterval(() => {
+      const diff = Math.floor((Date.now() - gameStartedAt)/1000);
+      const h = String(Math.floor(diff/3600)).padStart(2,"0");
+      const m = String(Math.floor((diff%3600)/60)).padStart(2,"0");
+      const s = String(diff%60).padStart(2,"0");
+      $("gameClock").textContent = `${h}:${m}:${s}`;
+    },1000);
+  }
+
+  function loadTrack(index){
+    const t = playlist[index];
+    $("musicAudio").src = t.file;
+    $("coverImage").src = t.cover;
+    $("trackTitle").textContent = t.title;
+    $("trackArtist").textContent = t.artist;
+    $("miniTrack").textContent = t.title;
+    $("miniArtist").textContent = t.artist;
+    $("progressBar").value = 0;
+    $("currentTime").textContent = "0:00";
+    $("duration").textContent = "0:00";
+  }
+
+  function playMusic(){
+    if(!settings.music) return;
+    const audio = $("musicAudio");
+    audio.volume = settings.music ? (settings.volume / 100) * 0.45 : 0;
+    audio.play().then(() => {
+      isPlaying = true;
+      $("playBtn").textContent = "⏸";
+    }).catch(() => {});
+  }
+
+  function pauseMusic(){
+    const audio = $("musicAudio");
+    audio.pause();
+    isPlaying = false;
+    $("playBtn").textContent = "▶";
+  }
+
+  function nextTrack(){
+    currentTrack = (currentTrack + 1) % playlist.length;
+    loadTrack(currentTrack);
+    playMusic();
+  }
+
+  function prevTrack(){
+    currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+    loadTrack(currentTrack);
+    playMusic();
+  }
+
+  function formatTime(seconds){
+    if(!seconds || isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = String(Math.floor(seconds % 60)).padStart(2,"0");
+    return `${m}:${s}`;
+  }
+
+
+  function openHowTo(){
+    const overlay = $("howToOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeHowTo(){
+    const overlay = $("howToOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 320);
+  }
+
+
+
+  function openLandedCard(playerIndex, spaceIndex){
+    currentBuyerIndex = playerIndex;
+    openCard(boardSpaces[spaceIndex], spaceIndex);
+  }
+
+
+  function createPendingRent(playerIndex, ownerIndex, spaceIndex, rent){
+    pendingRent = {
+      payerIndex: playerIndex,
+      ownerIndex,
+      spaceIndex,
+      rent,
+      paid: false
+    };
+  }
+
+  function clearPendingRent(){
+    pendingRent = null;
+  }
+
+  function payPendingRent(){
+    if(!pendingRent || pendingRent.paid) return;
+
+    const payer = players[pendingRent.payerIndex];
+    const owner = players[pendingRent.ownerIndex];
+    const rent = pendingRent.rent;
+
+    if(!payer || !owner) return;
+
+    payer.money = Math.max(0, payer.money - rent);
+    owner.money += rent;
+    pendingRent.paid = true;
+
+    $("diceTotal").textContent = `${owner.name} kira aldı: ${rent} TL`;
+    addActivity(`💸 ${payer.name}, ${owner.name} oyuncusuna ${rent} TL kira ödedi.`);
+    showPaymentPopup(pendingRent.payerIndex, rent);
+    setTimeout(() => showMoneyPopup(pendingRent.ownerIndex, rent), 260);
+    playPaymentSound();
+    setTimeout(() => playSound("money"), 300);
+
+    updatePanel();
+
+    const index = pendingRent.spaceIndex;
+    clearPendingRent();
+    openCard(boardSpaces[index], index);
+  }
+
+  function showRentWarning(){
+    const old = document.querySelector(".rent-warning-line");
+    if(old) old.remove();
+
+    const warn = document.createElement("div");
+    warn.className = "rent-warning-line";
+    warn.textContent = "Önce kiranızı ödemeniz gerekmektedir.";
+    $("cardRows")?.before(warn);
+    playSound("fail");
+  }
+
+
+  function buyCurrentSpace(){
+    if(pendingRent && !pendingRent.paid){
+      payPendingRent();
+      return;
+    }
+
+    if(currentOpenSpaceIndex === null) return;
+
+    const space = boardSpaces[currentOpenSpaceIndex];
+    if(!canBuySpace(space)) return;
+
+    const ownerIndex = getOwnerIndex(currentOpenSpaceIndex);
+    if(ownerIndex >= 0) return;
+
+    if(!isBuyAllowedForCurrentCard(currentOpenSpaceIndex)){
+      $("diceTotal").textContent = "Bu mülkü sadece üstüne gelince satın alabilirsin.";
+      playSound("fail");
+      return;
+    }
+
+    const buyerIndex = currentBuyerIndex ?? activePlayerIndex;
+    const player = players[buyerIndex];
+    const price = getSpacePurchasePrice(space);
+
+    if(!player) return;
+
+    if(player.money < price){
+      $("diceTotal").textContent = "Yetersiz bakiye!";
+      playSound("fail");
+      return;
+    }
+
+    player.money -= price;
+    player.owned.push(currentOpenSpaceIndex);
+
+    playSound("buy");
+    showPaymentPopup(buyerIndex, price);
+    addActivity(`🏠 ${player.name}, ${space.n} mülkünü ${price} TL'ye satın aldı.`);
+
+    refreshTileOwnership();
+    updatePanel();
+
+    const tile = document.querySelectorAll(".tile")[currentOpenSpaceIndex];
+    tile?.classList.add("tile-flash");
+    setTimeout(() => tile?.classList.remove("tile-flash"), 900);
+
+    openLandedCard(buyerIndex, currentOpenSpaceIndex);
+  }
+
+
+  function openJailChoice(playerIndex){
+    currentBuyerIndex = playerIndex;
+    const overlay = $("jailChoiceOverlay");
+    const payBtn = $("payBailBtn");
+    const player = players[playerIndex];
+    if(!overlay || !player) return;
+
+    if(payBtn){
+      const small = payBtn.querySelector("small");
+      if(player.money < 50){
+        payBtn.disabled = true;
+        if(small) small.textContent = "Yetersiz bakiye";
+      }else{
+        payBtn.disabled = false;
+        if(small) small.textContent = "Hapisten hemen çık ve oyununa devam et.";
+      }
+    }
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeJailChoice(){
+    const overlay = $("jailChoiceOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 280);
+  }
+
+  function chooseStayInJail(){
+    const playerIndex = currentBuyerIndex ?? activePlayerIndex;
+    const player = players[playerIndex];
+    if(!player) return;
+
+    player.jailTurns = 3;
+    $("diceTotal").textContent = `${player.name} 3 tur hapiste kalacak.`;
+    playSound("jail");
+    closeJailChoice();
+    updatePanel();
+  }
+
+  function choosePayBail(){
+    const playerIndex = currentBuyerIndex ?? activePlayerIndex;
+    const player = players[playerIndex];
+    if(!player || player.money < 50) return;
+
+    player.money -= 50;
+    player.jailTurns = 0;
+    $("diceTotal").textContent = `${player.name} 50 TL kefalet ödedi.`;
+    showPaymentPopup(playerIndex, 50);
+    playPaymentSound();
+    closeJailChoice();
+    updatePanel();
+  }
+
+  function handleLandingSpace(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space) return "none";
+
+    const name = String(space.n || "").toUpperCase();
+
+    if(space.t === "chance" || name.includes("ŞANS")){
+      $("diceTotal").textContent = "Şans karesine geldin.";
+      setTimeout(() => openChanceDraw(playerIndex), 450);
+      updatePanel();
+      return "chance";
+    }
+
+    if(name.includes("KODESE")){
+      const jailIndex = boardSpaces.findIndex(s => String(s.n || "").toUpperCase().includes("HAPİS"));
+      if(jailIndex >= 0){
+        players[playerIndex].position = jailIndex;
+        moveTokenVisual(playerIndex);
+      }
+
+      $("diceTotal").textContent = "Kodese girdin!";
+      playSound("jail");
+      setTimeout(() => openJailChoice(playerIndex), 450);
+      updatePanel();
+      return "jail";
+    }
+
+    if(space.t === "tax"){
+      const player = players[playerIndex];
+      const fee = space.fee || 0;
+      player.money = Math.max(0, player.money - fee);
+      $("diceTotal").textContent = `${space.n}: -${fee} TL`;
+      showPaymentPopup(playerIndex, fee);
+      playPaymentSound();
+
+      const tile = document.querySelectorAll(".tile")[spaceIndex];
+      tile?.classList.add("tax-hit-flash");
+      setTimeout(() => tile?.classList.remove("tax-hit-flash"), 800);
+
+      updatePanel();
+      return "tax";
+    }
+
+    if(canBuySpace(space)){
+      const ownerIndex = getOwnerIndex(spaceIndex);
+
+      if(ownerIndex >= 0 && ownerIndex !== playerIndex){
+        const rent = getSpaceRent(space);
+        createPendingRent(playerIndex, ownerIndex, spaceIndex, rent);
+        $("diceTotal").textContent = `${players[ownerIndex].name} mülküne geldin. Kira: ${rent} TL`;
+
+        setTimeout(() => {
+          currentBuyerIndex = playerIndex;
+          openCard(space, spaceIndex);
+        }, 450);
+
+        updatePanel();
+        return "rent";
+      }
+
+      return "buyable";
+    }
+
+    return "normal";
+  }
+
+  function afterPlayerLands(playerIndex, landedIndex){
+    const landed = boardSpaces[landedIndex];
+    if(!landed) return;
+
+    const name = String(landed.n || "").toUpperCase();
+
+    if(name.includes("KODESE")){
+      handleLandingSpace(playerIndex, landedIndex);
+      return;
+    }
+
+    const result = handleLandingSpace(playerIndex, landedIndex);
+
+    if(result === "normal" && canBuySpace(landed)){
+      setTimeout(() => {
+        currentBuyerIndex = playerIndex;
+        openCard(landed, landedIndex);
+      }, 450);
+    }
+  }
+
+
+
+
+  const chanceCards = [
+    { text:"Başlangıca git.", type:"goToStart" },
+    { text:"Bankadan 100 TL al.", type:"money", amount:100 },
+    { text:"Bankaya 50 TL öde.", type:"pay", amount:50 },
+    { text:"En yakın ulaşıma git.", type:"nearestTransport" },
+    { text:"İleri 3 kare git.", type:"move", steps:3 },
+    { text:"Geri 3 kare git.", type:"move", steps:-3 },
+    { text:"Kodese gir.", type:"jail" },
+    { text:"Hapisten dilediğin zaman çık.", type:"jailFree" },
+    { text:"Doğum günü! Her oyuncu sana 20 TL versin.", type:"birthday", amount:20 },
+    { text:"Arabam bozuldu, 75 TL öde.", type:"pay", amount:75 },
+    { text:"Piyangodan 100 TL kazandın.", type:"money", amount:100 },
+    { text:"Ev tamiri yap. Her ev için 25 TL öde.", type:"repair", houseFee:25 },
+    { text:"Belediye ödülü, 50 TL al.", type:"money", amount:50 },
+    { text:"Zarını tekrar at.", type:"rollAgain" }
+  ];
+
+  function openChanceDraw(playerIndex){
+    pendingChancePlayerIndex = playerIndex;
+    chanceCardActive = false;
+
+    const overlay = $("chanceOverlay");
+    if(!overlay) return;
+
+    $("chanceTitle").textContent = "ŞANS KARTI";
+    $("chanceText").textContent = "Şans kartı çek.";
+    $("drawChanceBtn").textContent = "ŞANS KARTI ÇEK";
+    $("drawChanceBtn").disabled = false;
+    $("closeChanceBtn").style.display = "block";
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("card");
+  }
+
+  function closeChance(){
+    if(chanceCardActive) return;
+    const overlay = $("chanceOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 260);
+  }
+
+  function drawChanceCard(){
+    if(pendingChancePlayerIndex === null) return;
+
+    const card = chanceCards[Math.floor(Math.random() * chanceCards.length)];
+    chanceCardActive = true;
+
+    $("chanceTitle").textContent = "ŞANS KARTI";
+    $("chanceText").textContent = card.text;
+    $("drawChanceBtn").disabled = true;
+    $("drawChanceBtn").textContent = "UYGULANIYOR...";
+    $("closeChanceBtn").style.display = "none";
+    addActivity(`🃏 ${players[pendingChancePlayerIndex].name}: ${card.text}`);
+
+    playSound("card");
+
+    setTimeout(async () => {
+      await applyChanceCard(pendingChancePlayerIndex, card);
+      chanceCardActive = false;
+      const overlay = $("chanceOverlay");
+      overlay?.classList.remove("show");
+      setTimeout(() => overlay?.classList.add("hidden"), 260);
+      pendingChancePlayerIndex = null;
+    }, 1800);
+  }
+
+  async function applyChanceCard(playerIndex, card){
+    const player = players[playerIndex];
+    if(!player) return;
+
+    if(card.type === "money"){
+      player.money += card.amount;
+      $("diceTotal").textContent = `Şans: +${card.amount} TL`;
+      showMoneyPopup(playerIndex, card.amount);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "pay"){
+      player.money = Math.max(0, player.money - card.amount);
+      $("diceTotal").textContent = `Şans: -${card.amount} TL`;
+      showPaymentPopup(playerIndex, card.amount);
+      playPaymentSound();
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "birthday"){
+      players.forEach((p, i) => {
+        if(i !== playerIndex && p.money > 0){
+          p.money = Math.max(0, p.money - card.amount);
+          player.money += card.amount;
+          showPaymentPopup(i, card.amount);
+        }
+      });
+      setTimeout(() => showMoneyPopup(playerIndex, card.amount * Math.max(0, players.length - 1)), 250);
+      $("diceTotal").textContent = `Doğum günü! Her oyuncu ${card.amount} TL verdi.`;
+      playSound("money");
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "repair"){
+      const ownedCount = player.owned.length;
+      const total = ownedCount * card.houseFee;
+      player.money = Math.max(0, player.money - total);
+      $("diceTotal").textContent = `Ev tamiri: -${total} TL`;
+      if(total > 0){
+        showPaymentPopup(playerIndex, total);
+        playPaymentSound();
+      }
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "goToStart"){
+      player.position = 0;
+      moveTokenVisual(playerIndex);
+      player.money += 200;
+      $("diceTotal").textContent = "Başlangıca gittin. +200 TL";
+      showMoneyPopup(playerIndex, 200);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "nearestTransport"){
+      const transports = boardSpaces
+        .map((s, i) => ({s, i}))
+        .filter(x => x.s.t === "transport");
+
+      let target = transports[0].i;
+      for(const t of transports){
+        if(t.i > player.position){
+          target = t.i;
+          break;
+        }
+      }
+
+      const steps = (target - player.position + boardSpaces.length) % boardSpaces.length;
+      await movePlayerStepByStep(playerIndex, steps);
+      $("diceTotal").textContent = "En yakın ulaşıma gidildi.";
+      afterPlayerLands(playerIndex, player.position);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "move"){
+      const steps = card.steps;
+      if(steps > 0){
+        await movePlayerStepByStep(playerIndex, steps);
+      }else{
+        for(let i=0;i<Math.abs(steps);i++){
+          player.position = (player.position - 1 + boardSpaces.length) % boardSpaces.length;
+          moveTokenVisual(playerIndex);
+          await wait(330);
+        }
+      }
+      $("diceTotal").textContent = steps > 0 ? `${steps} kare ileri gidildi.` : `${Math.abs(steps)} kare geri gidildi.`;
+      afterPlayerLands(playerIndex, player.position);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "jail"){
+      const jailGoIndex = boardSpaces.findIndex(s => String(s.n || "").toUpperCase().includes("KODESE"));
+      if(jailGoIndex >= 0){
+        player.position = jailGoIndex;
+        moveTokenVisual(playerIndex);
+        await wait(400);
+        afterPlayerLands(playerIndex, jailGoIndex);
+      }
+      return;
+    }
+
+    if(card.type === "jailFree"){
+      player.jailFree = (player.jailFree || 0) + 1;
+      $("diceTotal").textContent = "Hapisten çık kartı aldın.";
+      playSound("card");
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "rollAgain"){
+      hasRolledThisTurn = false;
+      canEndTurn = false;
+      $("diceTotal").textContent = "Zarını tekrar atabilirsin.";
+      updatePanel();
+      updateTurnButtons();
+      return;
+    }
+  }
+
+  /* ===== V28 FINAL OVERRIDES ===== */
+
+  function renderLeftPlayerPanel(){
+    if(!players.length) return;
+    const p = players[activePlayerIndex];
+    const panel = $("leftPlayerPanel");
+    const colorNames = ["active-blue","active-red","active-green","active-yellow","active-pink","active-cyan"];
+
+    if(panel){
+      colorNames.forEach(c => panel.classList.remove(c));
+      panel.classList.add(colorNames[activePlayerIndex] || "active-blue");
+    }
+
+    if($("leftPanelTitle")) $("leftPanelTitle").textContent = `${p.name} ALANI`;
+    if($("readyHouseCount")) $("readyHouseCount").textContent = p.housesAvailable ?? 12;
+    if($("readyHotelCount")) $("readyHotelCount").textContent = p.hotelsAvailable ?? 4;
+    if($("ownedCardCount")) $("ownedCardCount").textContent = p.owned.length;
+
+    const holder = $("miniOwnedCards");
+    if(!holder) return;
+    holder.innerHTML = "";
+
+    const count = Math.min(p.owned.length, 7);
+    p.owned.slice(0,7).forEach((spaceIndex, deckIndex) => {
+      const space = boardSpaces[spaceIndex];
+      const card = document.createElement("div");
+      card.className = "mini-owned-card";
+      card.title = space.n;
+      card.style.setProperty("--card-color", space.c || "#6d28d9");
+      card.style.setProperty("--deck-x", `${(deckIndex - (count - 1) / 2) * 13}px`);
+      card.style.setProperty("--deck-rot", `${(deckIndex - (count - 1) / 2) * 5}deg`);
+      card.innerHTML = `<span class="mini-owned-card-name">${space.n}</span>`;
+      holder.appendChild(card);
+    });
+  }
+
+  function openJailChoice(playerIndex){
+    currentBuyerIndex = playerIndex;
+    const overlay = $("jailChoiceOverlay");
+    const payBtn = $("payBailBtn");
+    const player = players[playerIndex];
+    if(!overlay || !player) return;
+
+    if(payBtn){
+      const small = payBtn.querySelector("small");
+      if(player.money < 50){
+        payBtn.disabled = true;
+        if(small) small.textContent = "Yetersiz bakiye";
+      }else{
+        payBtn.disabled = false;
+        if(small) small.textContent = "Hapisten hemen çık ve oyununa devam et.";
+      }
+    }
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeJailChoice(){
+    const overlay = $("jailChoiceOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 260);
+  }
+
+  function chooseStayInJail(){
+    const playerIndex = currentBuyerIndex ?? activePlayerIndex;
+    const player = players[playerIndex];
+    if(!player) return;
+
+    player.jailTurns = 3;
+    $("diceTotal").textContent = `${player.name} 3 tur hapiste kalacak.`;
+    playSound("jail");
+    closeJailChoice();
+    canEndTurn = true;
+    updatePanel();
+  }
+
+  function choosePayBail(){
+    const playerIndex = currentBuyerIndex ?? activePlayerIndex;
+    const player = players[playerIndex];
+    if(!player || player.money < 50) return;
+
+    player.money -= 50;
+    player.jailTurns = 0;
+    $("diceTotal").textContent = `${player.name} 50 TL kefalet ödedi.`;
+    showPaymentPopup(playerIndex, 50);
+    playPaymentSound();
+    closeJailChoice();
+    canEndTurn = true;
+    updatePanel();
+  }
+
+  function handleLandingSpace(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space) return "none";
+
+    const name = String(space.n || "").toUpperCase();
+
+    if(name.includes("KODESE")){
+      const jailIndex = boardSpaces.findIndex(s => String(s.n || "").toUpperCase().includes("HAPİS"));
+      if(jailIndex >= 0){
+        players[playerIndex].position = jailIndex;
+        moveTokenVisual(playerIndex);
+      }
+
+      $("diceTotal").textContent = "Kodese girdin!";
+      playSound("jail");
+      setTimeout(() => openJailChoice(playerIndex), 450);
+      updatePanel();
+      return "jail";
+    }
+
+    if(space.t === "tax"){
+      const player = players[playerIndex];
+      const fee = space.fee || 0;
+      player.money = Math.max(0, player.money - fee);
+      $("diceTotal").textContent = `${space.n}: -${fee} TL`;
+      showPaymentPopup(playerIndex, fee);
+      playPaymentSound();
+
+      const tile = document.querySelectorAll(".tile")[spaceIndex];
+      tile?.classList.add("tax-hit-flash");
+      setTimeout(() => tile?.classList.remove("tax-hit-flash"), 800);
+
+      updatePanel();
+      return "tax";
+    }
+
+    if(canBuySpace(space)){
+      const ownerIndex = getOwnerIndex(spaceIndex);
+
+      if(ownerIndex >= 0 && ownerIndex !== playerIndex){
+        const rent = getSpaceRent(space);
+        createPendingRent(playerIndex, ownerIndex, spaceIndex, rent);
+        $("diceTotal").textContent = `${players[ownerIndex].name} mülküne geldin. Kira: ${rent} TL`;
+
+        setTimeout(() => {
+          currentBuyerIndex = playerIndex;
+          openCard(space, spaceIndex);
+        }, 450);
+
+        updatePanel();
+        return "rent";
+      }
+
+      return "buyable";
+    }
+
+    return "normal";
+  }
+
+  function afterPlayerLands(playerIndex, landedIndex){
+    const landed = boardSpaces[landedIndex];
+    if(!landed) return;
+
+    const result = handleLandingSpace(playerIndex, landedIndex);
+
+    if(result === "buyable"){
+      setTimeout(() => {
+        currentBuyerIndex = playerIndex;
+        openCard(landed, landedIndex);
+      }, 450);
+    }
+  }
+
+
+
+  /* ===== V30 FINAL SYSTEM OVERRIDES ===== */
+
+  function playPaymentSound(){
+    playSound("lose");
+  }
+
+  function ensureBuildData(){
+    players.forEach(p => {
+      if(!p.buildings) p.buildings = {};
+      if(p.housesAvailable === undefined) p.housesAvailable = 12;
+      if(p.hotelsAvailable === undefined) p.hotelsAvailable = 4;
+    });
+  }
+
+  function getBuilding(playerIndex, spaceIndex){
+    ensureBuildData();
+    const p = players[playerIndex];
+    if(!p.buildings[spaceIndex]){
+      p.buildings[spaceIndex] = { houses:0, hotel:false };
+    }
+    return p.buildings[spaceIndex];
+  }
+
+  function getBuildingRaw(playerIndex, spaceIndex){
+    const p = players[playerIndex];
+    return p?.buildings?.[spaceIndex] || { houses:0, hotel:false };
+  }
+
+  function getColorGroupIndices(color){
+    return boardSpaces
+      .map((s,i) => ({s,i}))
+      .filter(x => x.s.t === "property" && x.s.c === color)
+      .map(x => x.i);
+  }
+
+  function ownsFullColorGroup(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space || space.t !== "property") return false;
+    const group = getColorGroupIndices(space.c);
+    return group.length > 0 && group.every(i => players[playerIndex].owned.includes(i));
+  }
+
+  function getBuildCost(space){
+    const s = propertyStats[space.n];
+    return s ? s[7] : 50;
+  }
+
+  function getRentForSpace(space, spaceIndex){
+    if(!space) return 0;
+
+    if(space.t === "transport"){
+      return space.rent || 10;
+    }
+
+    if(space.t !== "property") return 0;
+
+    const stats = propertyStats[space.n];
+    if(!stats) return Math.max(5, Math.round((space.price || 100) * 0.1));
+
+    const ownerIndex = getOwnerIndex(spaceIndex);
+    if(ownerIndex < 0) return stats[1];
+
+    const b = getBuildingRaw(ownerIndex, spaceIndex);
+    if(b.hotel) return stats[6];
+    if(b.houses > 0) return stats[1 + b.houses];
+    return stats[1];
+  }
+
+  function getSpaceRent(space, spaceIndex = null){
+    if(spaceIndex !== null) return getRentForSpace(space, spaceIndex);
+
+    if(space.t === "property"){
+      const stats = propertyStats[space.n];
+      return stats ? stats[1] : Math.max(5, Math.round((space.price || 100) * 0.1));
+    }
+
+    if(space.t === "transport") return space.rent || 10;
+    return 0;
+  }
+
+  function canBuildHouse(playerIndex, spaceIndex){
+    ensureBuildData();
+    const p = players[playerIndex];
+    const space = boardSpaces[spaceIndex];
+    if(!p || !space || space.t !== "property") return {ok:false,msg:"Sadece semtlere ev koyabilirsin."};
+    if(!p.owned.includes(spaceIndex)) return {ok:false,msg:"Bu mülk senin değil."};
+    if(!ownsFullColorGroup(playerIndex, spaceIndex)) return {ok:false,msg:"Bu renk grubunun tamamına sahip olmalısın."};
+
+    const b = getBuilding(playerIndex, spaceIndex);
+    if(b.hotel) return {ok:false,msg:"Otel olan yere ev konmaz."};
+    if(b.houses >= 4) return {ok:false,msg:"4 evden sonra otel kurmalısın."};
+    if(p.housesAvailable <= 0) return {ok:false,msg:"Koyabileceğin ev kalmadı."};
+
+    const group = getColorGroupIndices(space.c);
+    const houseCounts = group.map(i => getBuilding(playerIndex, i).houses);
+    const minHouses = Math.min(...houseCounts);
+    if(b.houses > minHouses) return {ok:false,msg:"Evleri aynı renk grubuna dengeli koymalısın."};
+
+    const cost = getBuildCost(space);
+    if(p.money < cost) return {ok:false,msg:`Yetersiz bakiye. Gerekli: ${cost} TL`};
+
+    return {ok:true,cost};
+  }
+
+  function canBuildHotel(playerIndex, spaceIndex){
+    ensureBuildData();
+    const p = players[playerIndex];
+    const space = boardSpaces[spaceIndex];
+    if(!p || !space || space.t !== "property") return {ok:false,msg:"Sadece semtlere otel koyabilirsin."};
+    if(!p.owned.includes(spaceIndex)) return {ok:false,msg:"Bu mülk senin değil."};
+    if(!ownsFullColorGroup(playerIndex, spaceIndex)) return {ok:false,msg:"Bu renk grubunun tamamına sahip olmalısın."};
+
+    const b = getBuilding(playerIndex, spaceIndex);
+    if(b.hotel) return {ok:false,msg:"Bu mülkte zaten otel var."};
+    if(b.houses < 4) return {ok:false,msg:"Otel için önce bu mülkte 4 ev olmalı."};
+    if(p.hotelsAvailable <= 0) return {ok:false,msg:"Koyabileceğin otel kalmadı."};
+
+    const group = getColorGroupIndices(space.c);
+    const allFour = group.every(i => getBuilding(playerIndex, i).houses === 4 && !getBuilding(playerIndex, i).hotel);
+    if(!allFour) return {ok:false,msg:"Otel için aynı renk grubundaki tüm semtlerde 4 ev olmalı."};
+
+    const cost = getBuildCost(space);
+    if(p.money < cost) return {ok:false,msg:`Yetersiz bakiye. Gerekli: ${cost} TL`};
+
+    return {ok:true,cost};
+  }
+
+  function setBuildMode(mode){
+    buildMode = mode;
+    updateBuildUI();
+    playSound("click");
+  }
+
+  function cancelBuildMode(){
+    buildMode = null;
+    updateBuildUI();
+    playSound("click");
+  }
+
+  function updateBuildUI(){
+    const houseBtn = $("buildHouseBtn");
+    const hotelBtn = $("buildHotelBtn");
+    const text = $("buildModeText");
+    const p = players[activePlayerIndex];
+
+    if(houseBtn) houseBtn.classList.toggle("active-build", buildMode === "house");
+    if(hotelBtn) hotelBtn.classList.toggle("active-build", buildMode === "hotel");
+
+    if(text){
+      if(!buildMode) text.textContent = "Ev/otel seç, sonra kendi mülk kartına veya kareye tıkla.";
+      if(buildMode === "house") text.textContent = `Ev koyma modu aktif. Kalan ev: ${p?.housesAvailable ?? 12}`;
+      if(buildMode === "hotel") text.textContent = `Otel koyma modu aktif. Kalan otel: ${p?.hotelsAvailable ?? 4}`;
+    }
+  }
+
+  function showBuildMessage(msg){
+    $("diceTotal").textContent = msg;
+    playSound("fail");
+  }
+
+  function buildOnProperty(spaceIndex){
+    ensureBuildData();
+    const p = players[activePlayerIndex];
+    const space = boardSpaces[spaceIndex];
+    if(!buildMode){
+      openCard(space, spaceIndex);
+      return;
+    }
+
+    const check = buildMode === "house"
+      ? canBuildHouse(activePlayerIndex, spaceIndex)
+      : canBuildHotel(activePlayerIndex, spaceIndex);
+
+    if(!check.ok){
+      showBuildMessage(check.msg);
+      openCard(space, spaceIndex);
+      return;
+    }
+
+    const b = getBuilding(activePlayerIndex, spaceIndex);
+
+    if(buildMode === "house"){
+      b.houses += 1;
+      p.housesAvailable -= 1;
+      p.money -= check.cost;
+      $("diceTotal").textContent = `${space.n}: 1 ev koyuldu. -${check.cost} TL`;
+    }else{
+      b.hotel = true;
+      b.houses = 0;
+      p.hotelsAvailable -= 1;
+      p.housesAvailable += 4;
+      p.money -= check.cost;
+      $("diceTotal").textContent = `${space.n}: otel kuruldu. -${check.cost} TL`;
+    }
+
+    playSound("buy");
+    showPaymentPopup(activePlayerIndex, check.cost);
+    buildMode = null;
+    refreshTileOwnership();
+    updatePanel();
+    openCard(space, spaceIndex);
+  }
+
+  function createBoard(){
+    const board = $("board");
+    if(!board) return;
+
+    board.querySelectorAll(".tile").forEach(t => t.remove());
+
+    boardSpaces.forEach((space,index) => {
+      const rect = getTileRect(index);
+      const tile = document.createElement("div");
+      tile.className = `tile ${space.t}`;
+      if(isLongName(space.n)) tile.classList.add("small-text");
+      tile.style.left = `${rect.x}%`;
+      tile.style.top = `${rect.y}%`;
+      tile.style.width = `${rect.w}%`;
+      tile.style.height = `${rect.h}%`;
+      tile.innerHTML = tileHTML(space);
+      tile.addEventListener("click", () => {
+        if(buildMode && space.t === "property") buildOnProperty(index);
+        else openCard(space, index);
+      });
+      board.appendChild(tile);
+    });
+  }
+
+  function refreshTileOwnership(){
+    document.querySelectorAll(".tile").forEach((tile, index) => {
+      tile.classList.remove("owned");
+      tile.style.removeProperty("--owner-color");
+      tile.querySelector(".owner-badge")?.remove();
+      tile.querySelector(".build-marker")?.remove();
+
+      const ownerIndex = getOwnerIndex(index);
+      if(ownerIndex >= 0){
+        const color = getPlayerColor(ownerIndex);
+        tile.classList.add("owned");
+        tile.style.setProperty("--owner-color", color);
+
+        const badge = document.createElement("div");
+        badge.className = "owner-badge";
+        badge.style.setProperty("--owner-color", color);
+        tile.appendChild(badge);
+
+        const space = boardSpaces[index];
+        if(space.t === "property"){
+          const b = getBuildingRaw(ownerIndex, index);
+          if(b.hotel || b.houses > 0){
+            const marker = document.createElement("div");
+            marker.className = `build-marker ${b.hotel ? "hotel" : ""}`;
+            const count = b.hotel ? 1 : b.houses;
+            for(let i=0;i<count;i++){
+              const dot = document.createElement("i");
+              marker.appendChild(dot);
+            }
+            tile.appendChild(marker);
+          }
+        }
+      }
+    });
+  }
+
+  function renderLeftPlayerPanel(){
+    if(!players.length) return;
+    ensureBuildData();
+
+    const p = players[activePlayerIndex];
+    const panel = $("leftPlayerPanel");
+    const colorNames = ["active-blue","active-red","active-green","active-yellow","active-pink","active-cyan"];
+
+    if(panel){
+      colorNames.forEach(c => panel.classList.remove(c));
+      panel.classList.add(colorNames[activePlayerIndex] || "active-blue");
+    }
+
+    if($("leftPanelTitle")) $("leftPanelTitle").textContent = `${p.name} ALANI`;
+    if($("readyHouseCount")) $("readyHouseCount").textContent = p.housesAvailable ?? 12;
+    if($("readyHotelCount")) $("readyHotelCount").textContent = p.hotelsAvailable ?? 4;
+    if($("ownedCardCount")) $("ownedCardCount").textContent = p.owned.length;
+
+    updateBuildUI();
+
+    const holder = $("miniOwnedCards");
+    if(!holder) return;
+    holder.innerHTML = "";
+
+    const visible = p.owned.slice(0,8);
+    const count = Math.min(visible.length, 8);
+
+    visible.forEach((spaceIndex, deckIndex) => {
+      const space = boardSpaces[spaceIndex];
+      const card = document.createElement("div");
+      card.className = "mini-owned-card";
+      card.title = space.n;
+      card.style.setProperty("--card-color", space.c || "#6d28d9");
+      card.style.setProperty("--deck-x", `${(deckIndex - (count - 1) / 2) * 12}px`);
+      card.style.setProperty("--deck-rot", `${(deckIndex - (count - 1) / 2) * 4}deg`);
+      card.innerHTML = `<span class="mini-owned-card-name">${space.n}</span>`;
+      card.addEventListener("click", () => {
+        suppressFailUntil = Date.now() + 600;
+        if(space.t === "property" && buildMode) buildOnProperty(spaceIndex);
+        else openCard(space, spaceIndex);
+      });
+      holder.appendChild(card);
+    });
+  }
+
+  function openCard(space, index = null){
+    currentOpenSpaceIndex = index;
+    currentBuyerIndex = activePlayerIndex;
+    playSound("card");
+
+    const overlay = $("propertyOverlay");
+    overlay.classList.remove("hidden","closing");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    $("cardTitle").textContent = space.n;
+    $("cardColorBar").style.background = space.c || "#f6c453";
+    $("cardIcon").textContent = space.icon || "🏠";
+    $("cardRows").innerHTML = "";
+    document.querySelectorAll(".card-owner-line, .card-warning-line, .rent-info-line, .rent-warning-line, .card-building-line, .card-build-warning").forEach(el => el.remove());
+    $("buyBtn").disabled = false;
+    $("buyBtn").classList.remove("rent-pay-mode");
+
+    if(space.t === "property"){
+      $("cardType").textContent = "MÜLK KARTI";
+      const s = propertyStats[space.n];
+      const ownerIndex = index !== null ? getOwnerIndex(index) : -1;
+      const b = ownerIndex >= 0 ? getBuildingRaw(ownerIndex, index) : {houses:0, hotel:false};
+
+      [["Satın Alma",s[0]],["Boş Kira",s[1]],["1 Ev",s[2]],["2 Ev",s[3]],["3 Ev",s[4]],["4 Ev",s[5]],["Otel",s[6]],["Ev/Otel Maliyeti",s[7]]]
+        .forEach(([a,b]) => addCardRow(a,`${b} TL`));
+
+      if(ownerIndex >= 0){
+        addCardRow("Güncel Kira", `${getRentForSpace(space, index)} TL`);
+        addCardRow("Ev Sayısı", b.hotel ? "Otel var" : String(b.houses));
+      }
+
+      const ownerLine = document.createElement("div");
+      ownerLine.className = "card-owner-line";
+
+      if(ownerIndex >= 0){
+        ownerLine.innerHTML = `Sahibi: <strong>${players[ownerIndex].name}</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(ownerIndex === activePlayerIndex){
+          const buildLine = document.createElement("div");
+          buildLine.className = "card-building-line";
+          buildLine.innerHTML = b.hotel ? "Bu mülkte <strong>otel</strong> var." : `Bu mülkte <strong>${b.houses}</strong> ev var.`;
+          $("cardRows").before(buildLine);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "YAPI KURMAK İÇİN SOL PANELİ KULLAN";
+        }else if(pendingRent && pendingRent.spaceIndex === index && !pendingRent.paid){
+          const rentLine = document.createElement("div");
+          rentLine.className = "rent-info-line";
+          rentLine.innerHTML = `<strong>${pendingRent.rent} TL</strong> kira öde`;
+          $("cardRows").before(rentLine);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").classList.add("rent-pay-mode");
+          $("buyBtn").textContent = `${pendingRent.rent} TL KİRA ÖDE`;
+        }else{
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "SATIN ALINMIŞ";
+        }
+      }else{
+        ownerLine.innerHTML = `Sahibi: <strong>Yok</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(isBuyAllowedForCurrentCard(index)){
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").textContent = "SATIN AL";
+        }else{
+          const warn = document.createElement("div");
+          warn.className = "card-warning-line";
+          warn.textContent = "Satın almak için bu kareye zarla gelmelisin.";
+          $("cardRows").before(warn);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "BURADAN SATIN ALAMAZSIN";
+        }
+      }
+
+    }else if(space.t === "transport"){
+      $("cardType").textContent = "ULAŞIM KARTI";
+      addCardRow("Satın Alma","25 TL");
+      addCardRow("Kira",`${getRentForSpace(space, index)} TL`);
+
+      const ownerIndex = index !== null ? getOwnerIndex(index) : -1;
+      const ownerLine = document.createElement("div");
+      ownerLine.className = "card-owner-line";
+
+      if(ownerIndex >= 0){
+        ownerLine.innerHTML = `Sahibi: <strong>${players[ownerIndex].name}</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(ownerIndex !== activePlayerIndex && pendingRent && pendingRent.spaceIndex === index && !pendingRent.paid){
+          const rentLine = document.createElement("div");
+          rentLine.className = "rent-info-line";
+          rentLine.innerHTML = `<strong>${pendingRent.rent} TL</strong> kira öde`;
+          $("cardRows").before(rentLine);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").classList.add("rent-pay-mode");
+          $("buyBtn").textContent = `${pendingRent.rent} TL KİRA ÖDE`;
+        }else{
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = ownerIndex === activePlayerIndex ? "BU ULAŞIM SENİN" : "SATIN ALINMIŞ";
+        }
+      }else{
+        ownerLine.innerHTML = `Sahibi: <strong>Yok</strong>`;
+        $("cardRows").before(ownerLine);
+
+        if(isBuyAllowedForCurrentCard(index)){
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = false;
+          $("buyBtn").textContent = "ULAŞIMI SATIN AL";
+        }else{
+          const warn = document.createElement("div");
+          warn.className = "card-warning-line";
+          warn.textContent = "Satın almak için bu kareye zarla gelmelisin.";
+          $("cardRows").before(warn);
+
+          $("buyBtn").style.display = "block";
+          $("buyBtn").disabled = true;
+          $("buyBtn").textContent = "BURADAN SATIN ALAMAZSIN";
+        }
+      }
+
+    }else if(space.t === "tax"){
+      $("cardType").textContent = "VERGİ / FATURA";
+      addCardRow("Ödenecek Tutar",`${space.fee} TL`);
+      $("buyBtn").style.display = "none";
+    }else if(space.t === "chance"){
+      $("cardType").textContent = "ŞANS KARESİ";
+      addCardRow("Aksiyon","Şans kartı çekilir");
+      $("buyBtn").style.display = "none";
+    }else{
+      $("cardType").textContent = "ÖZEL KARE";
+      if(space.n === "KODESE GİR") addCardRow("Aksiyon","Kodese gönderilir");
+      else if(space.n === "HAPİS ZİYARETİ") addCardRow("Aksiyon","Sadece ziyaret");
+      else addCardRow("Aksiyon","Bu karede beklenir");
+      $("buyBtn").style.display = "none";
+    }
+  }
+
+  const chanceCardsV30 = [
+    { text:"Başlangıca git.", type:"goToStart" },
+    { text:"Bankadan 100 TL al.", type:"money", amount:100 },
+    { text:"Bankaya 50 TL öde.", type:"pay", amount:50 },
+    { text:"En yakın ulaşıma git.", type:"nearestTransport" },
+    { text:"İleri 3 kare git.", type:"move", steps:3 },
+    { text:"Geri 3 kare git.", type:"move", steps:-3 },
+    { text:"Kodese gir.", type:"jail" },
+    { text:"Hapisten dilediğin zaman çık.", type:"jailFree" },
+    { text:"Doğum günü! Her oyuncu sana 20 TL versin.", type:"birthday", amount:20 },
+    { text:"Arabam bozuldu, 75 TL öde.", type:"pay", amount:75 },
+    { text:"Piyangodan 100 TL kazandın.", type:"money", amount:100 },
+    { text:"Ev tamiri yap. Her mülk için 25 TL öde.", type:"repair", houseFee:25 },
+    { text:"Belediye ödülü, 50 TL al.", type:"money", amount:50 },
+    { text:"Zarını tekrar at.", type:"rollAgain" }
+  ];
+
+  function openChanceDraw(playerIndex){
+    pendingChancePlayerIndex = playerIndex;
+    chanceCardActive = false;
+
+    const overlay = $("chanceOverlay");
+    if(!overlay) return;
+
+    $("chanceTitle").textContent = "ŞANS KARTI";
+    $("chanceText").textContent = "Şans kartı çek.";
+    $("drawChanceBtn").textContent = "ŞANS KARTI ÇEK";
+    $("drawChanceBtn").disabled = false;
+    $("closeChanceBtn").style.display = "block";
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("card");
+  }
+
+  function closeChance(){
+    if(chanceCardActive) return;
+    const overlay = $("chanceOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 260);
+  }
+
+  function drawChanceCard(){
+    if(pendingChancePlayerIndex === null) return;
+
+    const card = chanceCardsV30[Math.floor(Math.random() * chanceCardsV30.length)];
+    chanceCardActive = true;
+
+    $("chanceTitle").textContent = "ŞANS KARTI";
+    $("chanceText").textContent = card.text;
+    $("drawChanceBtn").disabled = true;
+    $("drawChanceBtn").textContent = "UYGULANIYOR...";
+    $("closeChanceBtn").style.display = "none";
+
+    playSound("card");
+
+    setTimeout(async () => {
+      await applyChanceCard(pendingChancePlayerIndex, card);
+      chanceCardActive = false;
+      const overlay = $("chanceOverlay");
+      overlay?.classList.remove("show");
+      setTimeout(() => overlay?.classList.add("hidden"), 260);
+      pendingChancePlayerIndex = null;
+    }, 1800);
+  }
+
+  async function applyChanceCard(playerIndex, card){
+    const player = players[playerIndex];
+    if(!player) return;
+
+    if(card.type === "money"){
+      player.money += card.amount;
+      $("diceTotal").textContent = `Şans: +${card.amount} TL`;
+      showMoneyPopup(playerIndex, card.amount);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "pay"){
+      player.money = Math.max(0, player.money - card.amount);
+      $("diceTotal").textContent = `Şans: -${card.amount} TL`;
+      showPaymentPopup(playerIndex, card.amount);
+      playPaymentSound();
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "birthday"){
+      players.forEach((p, i) => {
+        if(i !== playerIndex && p.money > 0){
+          p.money = Math.max(0, p.money - card.amount);
+          player.money += card.amount;
+          showPaymentPopup(i, card.amount);
+        }
+      });
+      setTimeout(() => showMoneyPopup(playerIndex, card.amount * Math.max(0, players.length - 1)), 250);
+      $("diceTotal").textContent = `Doğum günü! Her oyuncu ${card.amount} TL verdi.`;
+      playSound("money");
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "repair"){
+      const total = player.owned.length * card.houseFee;
+      player.money = Math.max(0, player.money - total);
+      $("diceTotal").textContent = `Ev tamiri: -${total} TL`;
+      if(total > 0){
+        showPaymentPopup(playerIndex, total);
+        playPaymentSound();
+      }
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "goToStart"){
+      player.position = 0;
+      moveTokenVisual(playerIndex);
+      player.money += 200;
+      $("diceTotal").textContent = "Başlangıca gittin. +200 TL";
+      showMoneyPopup(playerIndex, 200);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "nearestTransport"){
+      const transports = boardSpaces.map((s, i) => ({s, i})).filter(x => x.s.t === "transport");
+      let target = transports[0].i;
+
+      for(const t of transports){
+        if(t.i > player.position){
+          target = t.i;
+          break;
+        }
+      }
+
+      const steps = (target - player.position + boardSpaces.length) % boardSpaces.length;
+      await movePlayerStepByStep(playerIndex, steps);
+      $("diceTotal").textContent = "En yakın ulaşıma gidildi.";
+      afterPlayerLands(playerIndex, player.position);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "move"){
+      const steps = card.steps;
+      if(steps > 0){
+        await movePlayerStepByStep(playerIndex, steps);
+      }else{
+        for(let i=0;i<Math.abs(steps);i++){
+          player.position = (player.position - 1 + boardSpaces.length) % boardSpaces.length;
+          moveTokenVisual(playerIndex);
+          await wait(330);
+        }
+      }
+      $("diceTotal").textContent = steps > 0 ? `${steps} kare ileri gidildi.` : `${Math.abs(steps)} kare geri gidildi.`;
+      afterPlayerLands(playerIndex, player.position);
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "jail"){
+      const jailGoIndex = boardSpaces.findIndex(s => String(s.n || "").toUpperCase().includes("KODESE"));
+      if(jailGoIndex >= 0){
+        player.position = jailGoIndex;
+        moveTokenVisual(playerIndex);
+        await wait(400);
+        afterPlayerLands(playerIndex, jailGoIndex);
+      }
+      return;
+    }
+
+    if(card.type === "jailFree"){
+      player.jailFree = (player.jailFree || 0) + 1;
+      $("diceTotal").textContent = "Hapisten çık kartı aldın.";
+      playSound("card");
+      updatePanel();
+      return;
+    }
+
+    if(card.type === "rollAgain"){
+      hasRolledThisTurn = false;
+      canEndTurn = false;
+      $("diceTotal").textContent = "Zarını tekrar atabilirsin.";
+      updatePanel();
+      updateTurnButtons();
+      return;
+    }
+  }
+
+  function handleLandingSpace(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space) return "none";
+
+    const name = String(space.n || "").toUpperCase();
+
+    if(space.t === "chance" || name.includes("ŞANS")){
+      $("diceTotal").textContent = "Şans karesine geldin.";
+      addActivity(`🃏 ${players[playerIndex].name} şans karesine geldi.`);
+      setTimeout(() => openChanceDraw(playerIndex), 450);
+      updatePanel();
+      return "chance";
+    }
+
+    if(name.includes("KODESE")){
+      const jailIndex = boardSpaces.findIndex(s => String(s.n || "").toUpperCase().includes("HAPİS"));
+      if(jailIndex >= 0){
+        players[playerIndex].position = jailIndex;
+        moveTokenVisual(playerIndex);
+      }
+
+      $("diceTotal").textContent = "Kodese girdin!";
+      addActivity(`⛓️ ${players[playerIndex].name} kodese girdi.`);
+      playSound("jail");
+      setTimeout(() => openJailChoice(playerIndex), 450);
+      updatePanel();
+      return "jail";
+    }
+
+    if(space.t === "tax"){
+      const player = players[playerIndex];
+      const fee = space.fee || 0;
+      player.money = Math.max(0, player.money - fee);
+      $("diceTotal").textContent = `${space.n}: -${fee} TL`;
+      addActivity(`💵 ${player.name}, ${space.n} için ${fee} TL ödedi.`);
+      showPaymentPopup(playerIndex, fee);
+      playPaymentSound();
+
+      const tile = document.querySelectorAll(".tile")[spaceIndex];
+      tile?.classList.add("tax-hit-flash");
+      setTimeout(() => tile?.classList.remove("tax-hit-flash"), 800);
+
+      updatePanel();
+      return "tax";
+    }
+
+    if(canBuySpace(space)){
+      const ownerIndex = getOwnerIndex(spaceIndex);
+
+      if(ownerIndex >= 0 && ownerIndex !== playerIndex){
+        const rent = getRentForSpace(space, spaceIndex);
+        createPendingRent(playerIndex, ownerIndex, spaceIndex, rent);
+        $("diceTotal").textContent = `${players[ownerIndex].name} mülküne geldin. Kira: ${rent} TL`;
+
+        setTimeout(() => {
+          currentBuyerIndex = playerIndex;
+          openCard(space, spaceIndex);
+        }, 450);
+
+        updatePanel();
+        return "rent";
+      }
+
+      return "buyable";
+    }
+
+    return "normal";
+  }
+
+  function afterPlayerLands(playerIndex, landedIndex){
+    const landed = boardSpaces[landedIndex];
+    if(!landed) return;
+
+    const result = handleLandingSpace(playerIndex, landedIndex);
+
+    if(result === "buyable"){
+      setTimeout(() => {
+        currentBuyerIndex = playerIndex;
+        openCard(landed, landedIndex);
+      }, 450);
+    }
+  }
+
+
+
+  /* ===== V35 AI FOUNDATION ===== */
+
+  let botTurnTimer = null;
+  let botThinking = false;
+  let botSkipAuctionClose = false;
+
+  function isBotPlayer(index = activePlayerIndex){
+    return !!players[index]?.isBot;
+  }
+
+  function isOverlayOpen(id){
+    const el = $(id);
+    return !!el && !el.classList.contains("hidden") && (el.classList.contains("show") || getComputedStyle(el).display !== "none");
+  }
+
+  function botDelay(ms = 900){
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function queueBotTurn(delay = 900){
+    clearTimeout(botTurnTimer);
+
+    if(!players.length) return;
+    if(!isBotPlayer(activePlayerIndex)) return;
+
+    botTurnTimer = setTimeout(() => {
+      botTakeTurn().catch(err => {
+        console.warn("Bot hata:", err);
+        botThinking = false;
+      });
+    }, delay);
+  }
+
+  function botCanBuyCurrentCard(){
+    if(currentOpenSpaceIndex === null) return false;
+
+    const space = boardSpaces[currentOpenSpaceIndex];
+    if(!canBuySpace(space)) return false;
+    if(getOwnerIndex(currentOpenSpaceIndex) >= 0) return false;
+    if(!isBuyAllowedForCurrentCard(currentOpenSpaceIndex)) return false;
+
+    const price = getSpacePurchasePrice(space);
+    const p = players[activePlayerIndex];
+
+    return p && p.money - price >= 300;
+  }
+
+  function botClosePropertyWithoutAuction(){
+    botSkipAuctionClose = true;
+    closeCard();
+  }
+
+  function botHandlePropertyCard(){
+    if(!isOverlayOpen("propertyOverlay")) return false;
+
+    if(pendingRent && !pendingRent.paid){
+      payPendingRent();
+      queueBotTurn(900);
+      return true;
+    }
+
+    if(botCanBuyCurrentCard()){
+      buyCurrentSpace();
+      queueBotTurn(1000);
+      return true;
+    }
+
+    botClosePropertyWithoutAuction();
+    queueBotTurn(700);
+    return true;
+  }
+
+  function botHandleChance(){
+    if(!isOverlayOpen("chanceOverlay")) return false;
+
+    const drawBtn = $("drawChanceBtn");
+    if(drawBtn && !drawBtn.disabled){
+      drawChanceCard();
+      queueBotTurn(2600);
+      return true;
+    }
+
+    queueBotTurn(1200);
+    return true;
+  }
+
+  function botHandleJailChoice(){
+    if(!isOverlayOpen("jailChoiceOverlay")) return false;
+
+    const p = players[activePlayerIndex];
+    if(p.money >= 50){
+      choosePayBail();
+      addActivity(`🤖 ${p.name} 50 TL kefalet ödedi.`);
+    }else{
+      chooseStayInJail();
+      addActivity(`🤖 ${p.name} 3 tur hapiste kalmayı seçti.`);
+    }
+
+    queueBotTurn(900);
+    return true;
+  }
+
+  function botHandleAuction(){
+    if(!auctionState) return false;
+
+    const current = getAuctionCurrentPlayerIndex();
+    if(current === null){
+      queueBotTurn(700);
+      return true;
+    }
+
+    if(!isBotPlayer(current)) return false;
+
+    const bot = players[current];
+    const space = auctionState.space;
+    const basePrice = getSpacePurchasePrice(space);
+    const nextBid = auctionState.highestBid + 10;
+
+    const wants = bot.money - nextBid >= 350 && nextBid <= Math.max(basePrice, Math.floor(basePrice * 0.85));
+
+    setTimeout(() => {
+      if(!auctionState) return;
+      if(wants) placeAuctionBid(10);
+      else passAuction();
+      queueBotTurn(700);
+    }, 800);
+
+    return true;
+  }
+
+  async function botTakeTurn(){
+    if(botThinking) return;
+    if(!players.length) return;
+    if(!isBotPlayer(activePlayerIndex)) return;
+
+    botThinking = true;
+
+    try{
+      await botDelay(650);
+
+      if(botHandleAuction()) return;
+
+      if(botHandleJailChoice()) return;
+
+      if(botHandleChance()) return;
+
+      if(botHandlePropertyCard()) return;
+
+      if(!hasRolledThisTurn){
+        addActivity(`🤖 ${players[activePlayerIndex].name} düşünüyor...`);
+        await botDelay(650);
+        rollDice();
+        queueBotTurn(2600);
+        return;
+      }
+
+      if(canEndTurn){
+        await botDelay(900);
+        finishTurn();
+        return;
+      }
+
+      queueBotTurn(1000);
+    }finally{
+      botThinking = false;
+    }
+  }
+
+  // Satın alınabilir kart kapanınca botlarda müzayede açılmasın; bot pas geçerse tur devam etsin.
+  const _shouldStartAuctionOnCloseAI = shouldStartAuctionOnClose;
+  shouldStartAuctionOnClose = function(){
+    if(botSkipAuctionClose){
+      botSkipAuctionClose = false;
+      return false;
+    }
+    return _shouldStartAuctionOnCloseAI();
+  };
+
+  const _updatePanelAI = updatePanel;
+  updatePanel = function(){
+    _updatePanelAI();
+    queueBotTurn(900);
+  };
+
+  const _startGameAI = startGame;
+  startGame = function(){
+    _startGameAI();
+    queueBotTurn(1200);
+  };
+
+  const _openCardAI = openCard;
+  openCard = function(space, index = null){
+    _openCardAI(space, index);
+    queueBotTurn(900);
+  };
+
+  const _openChanceDrawAI = openChanceDraw;
+  openChanceDraw = function(playerIndex){
+    _openChanceDrawAI(playerIndex);
+    queueBotTurn(900);
+  };
+
+  const _openJailChoiceAI = openJailChoice;
+  openJailChoice = function(playerIndex){
+    _openJailChoiceAI(playerIndex);
+    queueBotTurn(900);
+  };
+
+  const _finishAuctionAI = finishAuction;
+  finishAuction = function(){
+    _finishAuctionAI();
+    queueBotTurn(900);
+  };
+
+
+
+  /* ===== V36 SMART AI ===== */
+
+  function botReserveMoney(){
+    const p = players[activePlayerIndex];
+    if(!p) return 500;
+
+    if(p.money >= 1400) return 450;
+    if(p.money >= 900) return 500;
+    return 650;
+  }
+
+  function botOwnsInSameColor(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space || space.t !== "property") return false;
+    return players[playerIndex].owned.some(i => boardSpaces[i]?.t === "property" && boardSpaces[i].c === space.c);
+  }
+
+  function botWouldCompleteColor(playerIndex, spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    if(!space || space.t !== "property") return false;
+
+    const group = getColorGroupIndices(space.c);
+    if(group.length <= 1) return false;
+
+    return group.every(i => i === spaceIndex || players[playerIndex].owned.includes(i));
+  }
+
+  function botBuyLimitForSpace(spaceIndex){
+    const space = boardSpaces[spaceIndex];
+    const price = getSpacePurchasePrice(space);
+    let reserve = botReserveMoney();
+
+    if(space?.t === "transport") reserve -= 120;
+    if(botOwnsInSameColor(activePlayerIndex, spaceIndex)) reserve -= 140;
+    if(botWouldCompleteColor(activePlayerIndex, spaceIndex)) reserve -= 260;
+
+    reserve = Math.max(250, reserve);
+    return players[activePlayerIndex].money - price >= reserve;
+  }
+
+  // V35'teki basit satın alma kararını daha akıllı yapıyoruz.
+  botCanBuyCurrentCard = function(){
+    if(currentOpenSpaceIndex === null) return false;
+
+    const space = boardSpaces[currentOpenSpaceIndex];
+    if(!canBuySpace(space)) return false;
+    if(getOwnerIndex(currentOpenSpaceIndex) >= 0) return false;
+    if(!isBuyAllowedForCurrentCard(currentOpenSpaceIndex)) return false;
+
+    return botBuyLimitForSpace(currentOpenSpaceIndex);
+  };
+
+  function botTryBuildOnce(){
+    if(!isBotPlayer(activePlayerIndex)) return false;
+
+    const p = players[activePlayerIndex];
+    if(!p || !p.owned?.length) return false;
+
+    ensureBuildData();
+
+    // Önce otel dene: aynı renk grubunda her yerde 4 ev varsa.
+    for(const spaceIndex of p.owned){
+      const space = boardSpaces[spaceIndex];
+      if(!space || space.t !== "property") continue;
+
+      const hotelCheck = canBuildHotel(activePlayerIndex, spaceIndex);
+      if(hotelCheck.ok && p.money - hotelCheck.cost >= 650){
+        buildMode = "hotel";
+        buildOnProperty(spaceIndex);
+        addActivity(`🧠 ${p.name} stratejik olarak ${space.n} üstüne otel kurdu.`);
+        return true;
+      }
+    }
+
+    // Sonra ev dene: grup tamamlandıysa ve dengeli kurala uygunsa.
+    const ownedProperties = p.owned.filter(i => boardSpaces[i]?.t === "property");
+
+    // Öncelik: tamamlanmış gruplar
+    const preferred = ownedProperties
+      .filter(i => ownsFullColorGroup(activePlayerIndex, i))
+      .sort((a,b) => {
+        const ca = getBuildCost(boardSpaces[a]);
+        const cb = getBuildCost(boardSpaces[b]);
+        return ca - cb;
+      });
+
+    for(const spaceIndex of preferred){
+      const space = boardSpaces[spaceIndex];
+      const houseCheck = canBuildHouse(activePlayerIndex, spaceIndex);
+
+      if(houseCheck.ok && p.money - houseCheck.cost >= 600){
+        buildMode = "house";
+        buildOnProperty(spaceIndex);
+        addActivity(`🧠 ${p.name} renk grubunu güçlendirdi: ${space.n} üstüne ev koydu.`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Bot müzayedede daha akıllı teklif verir.
+  botHandleAuction = function(){
+    if(!auctionState) return false;
+
+    const current = getAuctionCurrentPlayerIndex();
+    if(current === null){
+      queueBotTurn(700);
+      return true;
+    }
+
+    if(!isBotPlayer(current)) return false;
+
+    const bot = players[current];
+    const space = auctionState.space;
+    const spaceIndex = auctionState.spaceIndex;
+    const basePrice = getSpacePurchasePrice(space);
+    const nextBid10 = auctionState.highestBid + 10;
+    const nextBid50 = auctionState.highestBid + 50;
+
+    let maxBid = Math.floor(basePrice * 0.78);
+
+    if(space?.t === "transport") maxBid = Math.floor(basePrice * 1.15);
+    if(botOwnsInSameColor(current, spaceIndex)) maxBid = Math.floor(basePrice * 0.95);
+    if(botWouldCompleteColor(current, spaceIndex)) maxBid = Math.floor(basePrice * 1.20);
+
+    const reserve = bot.money >= 1300 ? 450 : 600;
+
+    setTimeout(() => {
+      if(!auctionState) return;
+
+      if(bot.money - nextBid50 >= reserve && nextBid50 <= maxBid){
+        placeAuctionBid(50);
+      }else if(bot.money - nextBid10 >= reserve && nextBid10 <= maxBid){
+        placeAuctionBid(10);
+      }else{
+        passAuction();
+      }
+
+      queueBotTurn(700);
+    }, 900);
+
+    return true;
+  };
+
+  // Kodeste daha akıllı karar: çok fakirse bekler, parası varsa çıkar.
+  botHandleJailChoice = function(){
+    if(!isOverlayOpen("jailChoiceOverlay")) return false;
+
+    const p = players[activePlayerIndex];
+    if(p.money >= 350){
+      choosePayBail();
+      addActivity(`🧠 ${p.name} kefalet ödeyip oyuna döndü.`);
+    }else{
+      chooseStayInJail();
+      addActivity(`🧠 ${p.name} parasını korumak için hapiste beklemeyi seçti.`);
+    }
+
+    queueBotTurn(900);
+    return true;
+  };
+
+  // V35 bot turunu geliştiriyoruz: zar atmadan veya tur bitirmeden önce ev/otel kurmayı dener.
+  botTakeTurn = async function(){
+    if(botThinking) return;
+    if(!players.length) return;
+    if(!isBotPlayer(activePlayerIndex)) return;
+
+    botThinking = true;
+
+    try{
+      await botDelay(650);
+
+      if(botHandleAuction()) return;
+      if(botHandleJailChoice()) return;
+      if(botHandleChance()) return;
+      if(botHandlePropertyCard()) return;
+
+      // Zar atmadan önce yatırım fırsatı varsa değerlendir.
+      if(!hasRolledThisTurn){
+        if(botTryBuildOnce()){
+          queueBotTurn(1100);
+          return;
+        }
+
+        addActivity(`🤖 ${players[activePlayerIndex].name} düşünüyor...`);
+        await botDelay(650);
+        rollDice();
+        queueBotTurn(2600);
+        return;
+      }
+
+      // Tur bitmeden önce de son bir ev/otel kurma denemesi.
+      if(canEndTurn){
+        if(botTryBuildOnce()){
+          queueBotTurn(1100);
+          return;
+        }
+
+        await botDelay(900);
+        finishTurn();
+        return;
+      }
+
+      queueBotTurn(1000);
+    }finally{
+      botThinking = false;
+    }
+  };
+
+
+
+  /* ===== V37 ONLINE UI MOCK LAYER ===== */
+
+  let mockRoomCode = null;
+  let selectedCharacter = null;
+
+  const characterOptions = ["🚗","🏍️","🧢","🐶","🐱","🛻","🚜","👑","🛹","🛸"];
+
+  function openOnlineOverlay(){
+    const overlay = $("onlineOverlay");
+    if(!overlay) return;
+
+    const firstName = document.querySelector(".player-name")?.value || "Oyuncu";
+    if($("onlinePlayerName")) $("onlinePlayerName").value = firstName;
+    if($("joinPlayerName")) $("joinPlayerName").value = firstName;
+
+    showOnlinePage("onlineHome");
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeOnlineOverlay(){
+    const overlay = $("onlineOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 260);
+    playSound("click");
+  }
+
+  function showOnlinePage(pageId){
+    ["onlineHome","onlineJoin","onlineLobby","characterSelectPage"].forEach(id => {
+      $(id)?.classList.toggle("active", id === pageId);
+    });
+  }
+
+  function makeRoomCode(){
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for(let i=0;i<6;i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  function renderLobby(playerName, isHost=true){
+    const holder = $("lobbyPlayers");
+    if(!holder) return;
+
+    holder.innerHTML = `
+      <div class="lobby-player">
+        <div class="lobby-avatar">👑</div>
+        <div>
+          <b>${playerName || "Oyuncu"}</b>
+          <span>${isHost ? "HOST" : "OYUNCU"}</span>
+        </div>
+        <strong>Hazır</strong>
+      </div>
+      <div class="lobby-player">
+        <div class="lobby-avatar">⏳</div>
+        <div>
+          <b>Arkadaş bekleniyor...</b>
+          <span>Oda kodunu paylaş</span>
+        </div>
+        <strong>Bekliyor</strong>
+      </div>
+    `;
+  }
+
+  function createOnlineRoom(){
+    const name = $("onlinePlayerName")?.value.trim() || "Oyuncu";
+    mockRoomCode = makeRoomCode();
+
+    $("roomCodeText").textContent = mockRoomCode;
+    $("lobbyInfoText").textContent = "Şimdilik taslak lobi. Sonraki sürümde gerçek online bağlantı eklenecek.";
+    renderLobby(name, true);
+    showOnlinePage("onlineLobby");
+    playSound("click");
+  }
+
+  function openJoinRoom(){
+    showOnlinePage("onlineJoin");
+    playSound("click");
+  }
+
+  function joinOnlineRoom(){
+    const name = $("joinPlayerName")?.value.trim() || "Oyuncu";
+    const code = $("joinRoomCode")?.value.trim().toUpperCase() || "ABC123";
+
+    mockRoomCode = code;
+    $("roomCodeText").textContent = mockRoomCode;
+    $("lobbyInfoText").textContent = "Odaya katılma taslağı. Gerçek bağlantı sonraki sürümde.";
+    renderLobby(name, false);
+    showOnlinePage("onlineLobby");
+    playSound("click");
+  }
+
+  function renderCharacters(){
+    const grid = $("characterGrid");
+    if(!grid) return;
+
+    grid.innerHTML = "";
+    characterOptions.forEach(ch => {
+      const btn = document.createElement("button");
+      btn.className = `character-option ${selectedCharacter === ch ? "selected" : ""}`;
+      btn.textContent = ch;
+      btn.type = "button";
+      btn.addEventListener("click", () => {
+        selectedCharacter = ch;
+        renderCharacters();
+        playSound("click");
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function goCharacterSelect(){
+    renderCharacters();
+    showOnlinePage("characterSelectPage");
+    playSound("click");
+  }
+
+  function onlineStartGameMock(){
+    if(!selectedCharacter){
+      selectedCharacter = "🚗";
+    }
+
+    closeOnlineOverlay();
+    showScreen("setup");
+    addActivity?.(`🌐 Online taslak: karakter seçildi ${selectedCharacter}`);
+  }
+
+
+  // Events
+
+  $("howToBtn")?.addEventListener("click", openHowTo);
+  $("closeHowToBtn")?.addEventListener("click", closeHowTo);
+  $("backFromHowToBtn")?.addEventListener("click", closeHowTo);
+  $("howToOverlay")?.addEventListener("click", (e) => { if(e.target === $("howToOverlay")) closeHowTo(); });
+
+  $("startFromHowToBtn")?.addEventListener("click", () => {
+    closeHowTo();
+    selectedPlayerCount = 2;
+    renderNameInputs();
+    setTimeout(() => showScreen("setup"), 260);
+  });
+
+
+  $("myPropertiesBtn")?.addEventListener("click", () => openSideInfo("properties"));
+  $("cardsPanelBtn")?.addEventListener("click", () => openSideInfo("cards"));
+  $("closeSideInfoBtn")?.addEventListener("click", closeSideInfo);
+  $("sideInfoOverlay")?.addEventListener("click", (e) => { if(e.target === $("sideInfoOverlay")) closeSideInfo(); });
+  $("gameSettingsBtn")?.addEventListener("click", openSettings);
+
+
+  $("stayJailBtn")?.addEventListener("click", chooseStayInJail);
+  $("payBailBtn")?.addEventListener("click", choosePayBail);
+
+
+  $("drawChanceBtn")?.addEventListener("click", drawChanceCard);
+  $("closeChanceBtn")?.addEventListener("click", closeChance);
+  $("chanceOverlay")?.addEventListener("click", (e) => { if(e.target === $("chanceOverlay")) closeChance(); });
+
+  $("buildHouseBtn")?.addEventListener("click", () => setBuildMode("house"));
+  $("buildHotelBtn")?.addEventListener("click", () => setBuildMode("hotel"));
+  $("cancelBuildBtn")?.addEventListener("click", cancelBuildMode);
+
+
+  $("winnerMenuBtn")?.addEventListener("click", () => {
+    $("winnerOverlay")?.classList.remove("show");
+    setTimeout(() => $("winnerOverlay")?.classList.add("hidden"), 250);
+    showScreen("menu");
+  });
+
+  $("winnerRestartBtn")?.addEventListener("click", () => {
+    $("winnerOverlay")?.classList.remove("show");
+    setTimeout(() => $("winnerOverlay")?.classList.add("hidden"), 250);
+    showScreen("setup");
+  });
+
+
+  $("bid10Btn")?.addEventListener("click", () => placeAuctionBid(10));
+  $("bid50Btn")?.addEventListener("click", () => placeAuctionBid(50));
+  $("passAuctionBtn")?.addEventListener("click", passAuction);
+  $("closeAuctionBtn")?.addEventListener("click", () => closeAuction(false));
+  $("auctionOverlay")?.addEventListener("click", (e) => { if(e.target === $("auctionOverlay")) closeAuction(false); });
+
+
+  $("onlineBtn")?.addEventListener("click", openOnlineOverlay);
+  $("closeOnlineBtn")?.addEventListener("click", closeOnlineOverlay);
+  $("createRoomBtn")?.addEventListener("click", createOnlineRoom);
+  $("showJoinRoomBtn")?.addEventListener("click", openJoinRoom);
+  $("joinRoomBtn")?.addEventListener("click", joinOnlineRoom);
+  $("backOnlineHomeBtn")?.addEventListener("click", () => showOnlinePage("onlineHome"));
+  $("goCharacterSelectBtn")?.addEventListener("click", goCharacterSelect);
+  $("backLobbyBtn")?.addEventListener("click", () => showOnlinePage("onlineLobby"));
+  $("onlineStartGameBtn")?.addEventListener("click", onlineStartGameMock);
+  $("onlineOverlay")?.addEventListener("click", (e) => { if(e.target === $("onlineOverlay")) closeOnlineOverlay(); });
+
+  $("intro").addEventListener("click", () => {
+    playMusic();
+    screens.intro.style.opacity = "0";
+    setTimeout(() => showScreen("menu"), 2300);
+  });
+
+  $("startBtn").addEventListener("click", () => {
+    selectedPlayerCount = 2;
+    renderNameInputs();
+    screens.menu.style.opacity = "0";
+    setTimeout(() => {
+      screens.menu.style.opacity = "";
+      showScreen("setup");
+    }, 900);
+  });
+
+  $("backMenuBtn").addEventListener("click", () => showScreen("menu"));
+  $("continueGameBtn").addEventListener("click", () => {
+    screens.setup.style.opacity = "0";
+    setTimeout(() => {
+      screens.setup.style.opacity = "";
+      startGame();
+    }, 900);
+  });
+  $("rollDiceBtn").addEventListener("click", rollDice);
+  $("endTurnBtn")?.addEventListener("click", finishTurn);
+  $("closePropertyCard").addEventListener("click", closeCard);
+  $("propertyOverlay").addEventListener("click", (e) => { if(e.target === $("propertyOverlay")) closeCard(); });
+  $("buyBtn")?.addEventListener("click", buyCurrentSpace);
+
+  document.querySelectorAll(".countBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".countBtn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedPlayerCount = Number(btn.dataset.count);
+      renderNameInputs();
+    });
+  });
+
+  $("musicToggle").addEventListener("click", () => $("musicPlayer").classList.toggle("hidden"));
+  $("closePlayer").addEventListener("click", () => $("musicPlayer").classList.add("hidden"));
+  $("playBtn").addEventListener("click", () => isPlaying ? pauseMusic() : playMusic());
+  $("nextBtn").addEventListener("click", nextTrack);
+  $("prevBtn").addEventListener("click", prevTrack);
+
+  $("musicAudio").addEventListener("loadedmetadata", () => {
+    $("duration").textContent = formatTime($("musicAudio").duration);
+  });
+
+  $("musicAudio").addEventListener("timeupdate", () => {
+    const audio = $("musicAudio");
+    if(!audio.duration) return;
+    $("progressBar").value = (audio.currentTime / audio.duration) * 100;
+    $("currentTime").textContent = formatTime(audio.currentTime);
+    $("duration").textContent = formatTime(audio.duration);
+  });
+
+  $("progressBar").addEventListener("input", () => {
+    const audio = $("musicAudio");
+    if(!audio.duration) return;
+    audio.currentTime = ($("progressBar").value / 100) * audio.duration;
+  });
+
+  $("volumeBar").addEventListener("input", () => {
+    $("musicAudio").volume = Number($("volumeBar").value);
+  });
+
+  $("musicAudio").addEventListener("ended", nextTrack);
+
+  document.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => playSound("click")));
+
+
+  $("settingsBtn")?.addEventListener("click", openSettings);
+  $("closeSettingsBtn")?.addEventListener("click", closeSettings);
+  $("settingsBackMainBtn")?.addEventListener("click", closeSettings);
+
+  $("soundSettingsBtn")?.addEventListener("click", () => showSettingsPage("soundSettingsPage"));
+  $("screenSettingsBtn")?.addEventListener("click", () => showSettingsPage("screenSettingsPage"));
+
+  $("backToSettingsFromSound")?.addEventListener("click", () => showSettingsPage("settingsHome"));
+  $("backToSettingsFromScreen")?.addEventListener("click", () => showSettingsPage("settingsHome"));
+
+  $("effectsToggle")?.addEventListener("click", () => {
+    settings.effects = !settings.effects;
+    saveSettings();
+    applySettings();
+    refreshSettingsUI();
+  });
+
+  $("musicToggleSetting")?.addEventListener("click", () => {
+    settings.music = !settings.music;
+    saveSettings();
+    applySettings();
+    refreshSettingsUI();
+
+    if(settings.music){
+      playMusic();
+    }else{
+      pauseMusic();
+    }
+  });
+
+  $("masterVolumeSlider")?.addEventListener("input", (e) => {
+    settings.volume = Number(e.target.value);
+    saveSettings();
+    applySettings();
+    refreshSettingsUI();
+  });
+
+  $("fullscreenBtn")?.addEventListener("click", toggleFullscreen);
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape"){
+      closeSettings();
+    }
+  });
+
+  $("settingsOverlay")?.addEventListener("click", (e) => {
+    if(e.target === $("settingsOverlay")) closeSettings();
+  });
+
+  loadSettings();
+
+  setupLogo();
+  renderNameInputs();
+  loadTrack(0);
+});

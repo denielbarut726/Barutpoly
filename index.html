@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarutPoly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="intro">
+    <div class="intro-inner">
+      <h2>DENIEL DEMIR BARUT</h2>
+      <p>PRESENTS</p>
+      <div class="click-start">
+        <div class="mouse-icon">🖱️</div>
+        <div>BAŞLAMAK İÇİN</div>
+        <strong>HERHANGİ BİR YERE TIKLA</strong>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu" class="screen hidden">
+    <video id="bgVideo" autoplay muted loop playsinline>
+      <source src="assets/videos/istanbul2.mp4" type="video/mp4">
+    </video>
+    <div class="darkOverlay"></div>
+    <div class="cinemaFilter"></div>
+    <div class="fog"></div>
+
+    <div class="top-title">
+      <div class="small-text">BARUT EMLAK OYUNU</div>
+      <h1>BARUTPOLY</h1>
+      <p>İlçeleri Satın Al, Kira Topla, Ailenin En Büyük Emlak Kralı Ol.</p>
+    </div>
+
+    <div class="menu-card">
+      <button id="startBtn" class="menuBtn"><span>▶</span><b>OYUNA BAŞLA</b></button>
+      <button id="onlineBtn" class="menuBtn online-menu-btn"><span>🌐</span><b>ONLINE OYNA</b></button>
+      <button id="settingsBtn" class="menuBtn"><span>⚙</span><b>AYARLAR</b></button>
+      <button id="howToBtn" class="menuBtn"><span>📖</span><b>NASIL OYNANIR?</b></button>
+      <div class="version">
+        <div>v0.0.1</div>
+        <div class="creator">By Deniel Demir Barut</div>
+      </div>
+    </div>
+
+    <div class="music-mini">
+      <button id="musicToggle" class="music-toggle">🎵</button>
+      <div class="music-mini-info">
+        <div class="mini-label">ŞU AN ÇALIYOR</div>
+        <div id="miniTrack">Neredesin</div>
+        <div id="miniArtist">Ezhel</div>
+      </div>
+    </div>
+
+    <div id="musicPlayer" class="music-player hidden">
+      <div class="player-header">
+        <div>
+          <div class="player-small">NOW PLAYING</div>
+          <div id="trackTitle" class="track-title">Neredesin</div>
+          <div id="trackArtist" class="track-artist">Ezhel</div>
+        </div>
+        <button id="closePlayer" class="mini-btn">×</button>
+      </div>
+      <div class="cover-wrap"><img id="coverImage" src="assets/covers/music1.jpg" alt="Kapak"></div>
+      <div class="time-row"><span id="currentTime">0:00</span><span id="duration">0:00</span></div>
+      <input id="progressBar" class="progress" type="range" min="0" max="100" value="0">
+      <div class="controls">
+        <button id="prevBtn" class="control-btn">⏮</button>
+        <button id="playBtn" class="play-btn">⏸</button>
+        <button id="nextBtn" class="control-btn">⏭</button>
+      </div>
+      <div class="volume-row">
+        <span>🔈</span>
+        <input id="volumeBar" class="volume" type="range" min="0" max="1" step="0.01" value="0.35">
+        <span>🔊</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="setup" class="screen hidden">
+    <video autoplay muted loop playsinline>
+      <source src="assets/videos/istanbul2.mp4" type="video/mp4">
+    </video>
+    <div class="darkOverlay"></div>
+    <div class="cinemaFilter"></div>
+
+    <div class="setup-card">
+      <div class="setup-small">OYUN KURULUMU</div>
+      <h2>Oyuncuları Seç</h2>
+      <p>Kaç kişi oynayacağınızı seç, isimleri yaz ve oyuncu türünü seç.</p>
+
+      <div class="count-row">
+        <button class="countBtn active" data-count="2">2</button>
+        <button class="countBtn" data-count="3">3</button>
+        <button class="countBtn" data-count="4">4</button>
+        <button class="countBtn" data-count="5">5</button>
+        <button class="countBtn" data-count="6">6</button>
+      </div>
+
+      <div id="nameInputs" class="name-inputs"></div>
+
+      <div class="setup-actions">
+        <button id="backMenuBtn" class="setup-secondary">GERİ</button>
+        <button id="continueGameBtn" class="setup-main">DEVAM ET</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="hidden">
+    <video id="gameBgVideo" autoplay muted loop playsinline>
+      <source src="assets/videos/istanbul2.mp4" type="video/mp4">
+    </video>
+    <div class="gameVideoOverlay"></div>
+
+    <main class="game-board-wrap">
+      <div id="board">
+        <div id="boardCenter">
+          <div class="marble"></div>
+          <div class="center-shine"></div>
+          <img id="boardLogo" alt="BarutPoly Logo">
+          <div id="boardFallbackLogo">
+            <div class="crown">👑</div>
+            <h2>BARUTPOLY</h2>
+            <p>BARUT EMLAK OYUNU</p>
+          </div>
+        </div>
+        <div id="tokenLayer"></div>
+      </div>
+
+      <div class="bottom-info">
+        <div><b>ⓘ OYUN BİLGİSİ</b><span>Zar at, ilerle, mülkleri satın al.</span></div>
+        <div><b>⌚ OYUN SÜRESİ</b><span id="gameClock">00:00:00</span></div>
+        <div><b>⚑ AKTİF TUR</b><span id="roundInfo">1</span></div>
+      </div>
+    </main>
+
+    <aside id="sidePanel">
+      <div class="panel-top">
+        <h2>👑 OYUN DURUMU</h2>
+        <div class="round-pill" id="turnPill">Sıra: Oyuncu 1</div>
+      </div>
+
+      <div id="playersList" class="players-list"></div>
+
+      <div class="stats-row">
+        <div><span>⌂</span><b>MÜLKLERİN</b><strong id="ownedCount">0</strong></div>
+        <div><span>◎</span><b>BAKİYE</b><strong id="activeMoney">1500 TL</strong></div>
+        <div><span>◉</span><b>KONUM</b><strong id="activeLocation">Başlangıç</strong></div>
+      </div>
+
+      <div class="dice-box">
+        <div class="dice-title">🎲 ZAR</div>
+        <div class="dice-display">
+          <div id="diceOne" class="dice-face">⚀</div>
+          <div id="diceTwo" class="dice-face">⚀</div>
+        </div>
+        <div id="diceTotal" class="dice-total">Toplam: -</div>
+      </div>
+
+      <button id="rollDiceBtn" class="main-action">🎲 Zar At</button>
+      <button id="endTurnBtn" class="end-turn-btn" disabled>✅ Turunu Bitir</button>
+      <button id="myPropertiesBtn" class="panel-btn">⌂ Mülklerim</button>
+      <button id="cardsPanelBtn" class="panel-btn">▣ Kartlar</button>
+      <button id="gameSettingsBtn" class="panel-btn">⚙ Ayarlar</button>
+  </aside>
+
+    <div id="activityPanel" class="activity-panel">
+      <div class="activity-title">CANLI AKTİVİTE</div>
+      <div id="activityFeed" class="activity-feed">
+        <div class="activity-empty">Oyun başlayınca olaylar burada gözükecek.</div>
+      </div>
+    </div>
+
+    <div id="leftPlayerPanel" class="left-player-panel">
+      <div id="leftPanelTitle" class="left-panel-title">OYUNCU ALANI</div>
+      <div class="build-panel">
+        <div class="build-title">YAPI KUR</div>
+        <div class="build-actions">
+          <button id="buildHouseBtn" class="build-btn">🏠 Ev Koy</button>
+          <button id="buildHotelBtn" class="build-btn">🏨 Otel Koy</button>
+          <button id="cancelBuildBtn" class="build-btn cancel">İptal</button>
+        </div>
+        <div id="buildModeText" class="build-mode-text">Önce ev/otel seç, sonra kendi mülküne tıkla.</div>
+      </div>
+
+      <div class="resource-grid">
+        <div><span>🏠</span><b id="readyHouseCount">12</b><small>Ev Hakkı</small></div>
+        <div><span>🏨</span><b id="readyHotelCount">4</b><small>Otel Hakkı</small></div>
+        <div><span>📜</span><b id="ownedCardCount">0</b><small>Mülk Kartı</small></div>
+      </div>
+      <div id="ownedDeckTitle" class="owned-deck-title">KART DESTESİ</div>
+      <div id="miniOwnedCards" class="mini-owned-cards deck-mode"></div>
+    </div>
+
+    <div id="sideInfoOverlay" class="side-info-overlay hidden">
+      <div class="side-info-modal">
+        <button id="closeSideInfoBtn" class="side-info-close">×</button>
+        <h2 id="sideInfoTitle">Mülklerim</h2>
+        <div id="sideInfoBody"></div>
+      </div>
+    </div>
+
+
+    <div id="jailChoiceOverlay" class="jail-choice-overlay hidden">
+      <div class="jail-choice-card">
+        <div class="jail-bars">⛓️</div>
+        <h2>SEÇİM YAP</h2>
+        <p>Kodese girdin! Nasıl devam etmek istiyorsun?</p>
+
+        <div class="jail-choice-options">
+          <button id="stayJailBtn" class="jail-option stay">
+            <span>🔒</span>
+            <b>3 Tur Hapiste Kal</b>
+            <small>3 turun boyunca zar atamazsın.</small>
+          </button>
+
+          <button id="payBailBtn" class="jail-option bail">
+            <span>💰</span>
+            <b>50 TL Kefalet Öde</b>
+            <small>Hapisten hemen çık ve oyununa devam et.</small>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div id="chanceOverlay" class="chance-overlay hidden">
+      <div class="chance-card">
+        <button id="closeChanceBtn" class="chance-close">×</button>
+        <div class="chance-icon">🃏</div>
+        <h2 id="chanceTitle">ŞANS KARTI</h2>
+        <p id="chanceText">Şans kartı çek.</p>
+        <button id="drawChanceBtn" class="draw-chance-btn">ŞANS KARTI ÇEK</button>
+      </div>
+    </div>
+
+
+    <div id="auctionOverlay" class="auction-overlay hidden">
+      <div class="auction-card">
+        <button id="closeAuctionBtn" class="auction-close">×</button>
+        <div class="auction-icon">💰</div>
+        <h2>MÜZAYEDE</h2>
+        <p id="auctionPropertyName">Mülk</p>
+
+        <div class="auction-current">
+          <span>En Yüksek Teklif</span>
+          <b id="auctionHighestBid">0 TL</b>
+          <small id="auctionHighestBidder">Henüz teklif yok</small>
+        </div>
+
+        <div class="auction-turn">
+          <span>Sıradaki Oyuncu</span>
+          <b id="auctionCurrentPlayer">Oyuncu</b>
+        </div>
+
+        <div id="auctionPlayers" class="auction-players"></div>
+
+        <div class="auction-actions">
+          <button id="bid10Btn">+10 TL</button>
+          <button id="bid50Btn">+50 TL</button>
+          <button id="passAuctionBtn" class="pass">PAS</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="propertyOverlay" class="hidden">
+      <div id="propertyCard">
+        <button id="closePropertyCard">×</button>
+        <div id="cardColorBar"></div>
+        <div class="card-watermark">BARUTPOLY</div>
+        <div id="cardIcon">🏠</div>
+        <h2 id="cardTitle">Semt</h2>
+        <p id="cardType">Mülk Kartı</p>
+        <div id="cardRows"></div>
+        <button id="buyBtn">SATIN AL</button>
+      </div>
+    </div>
+  </section>
+
+
+  <div id="winnerOverlay" class="winner-overlay hidden">
+    <div class="winner-card">
+      <div class="winner-glow"></div>
+      <div class="winner-cup">🏆</div>
+      <div class="winner-small">BARUTPOLY ŞAMPİYONU</div>
+      <h2 id="winnerName">KAZANAN</h2>
+      <p id="winnerSubtitle">BarutPoly'nin yeni emlak kralı!</p>
+
+      <div class="winner-stats">
+        <div><b id="winnerMoney">0 TL</b><span>Toplam Para</span></div>
+        <div><b id="winnerOwned">0</b><span>Mülk</span></div>
+        <div><b id="winnerHouses">0</b><span>Ev</span></div>
+        <div><b id="winnerHotels">0</b><span>Otel</span></div>
+        <div><b id="winnerTime">00:00:00</b><span>Oyun Süresi</span></div>
+      </div>
+
+      <div class="winner-actions">
+        <button id="winnerMenuBtn">🏠 Ana Menü</button>
+        <button id="winnerRestartBtn">🔄 Tekrar Oyna</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="onlineOverlay" class="online-overlay hidden">
+    <div class="online-modal">
+      <button id="closeOnlineBtn" class="online-close">×</button>
+
+      <div id="onlineHome" class="online-page active">
+        <div class="online-icon">🌐</div>
+        <div class="online-small">BARUTPOLY ONLINE</div>
+        <h2>Online Oyna</h2>
+        <p>Oda kur, arkadaşını davet et ya da oda koduyla katıl.</p>
+
+        <div class="online-form">
+          <label>Oyuncu Adın</label>
+          <input id="onlinePlayerName" type="text" placeholder="Adını yaz">
+
+          <div class="online-actions">
+            <button id="createRoomBtn" class="online-main">➕ Oda Kur</button>
+            <button id="showJoinRoomBtn" class="online-secondary">🔑 Odaya Katıl</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="onlineJoin" class="online-page">
+        <div class="online-icon">🔑</div>
+        <div class="online-small">ODAYA KATIL</div>
+        <h2>Oda Kodunu Gir</h2>
+
+        <div class="online-form">
+          <label>Oyuncu Adın</label>
+          <input id="joinPlayerName" type="text" placeholder="Adını yaz">
+
+          <label>Oda Kodu</label>
+          <input id="joinRoomCode" type="text" placeholder="ABX72Q" maxlength="6">
+
+          <div class="online-actions">
+            <button id="joinRoomBtn" class="online-main">Katıl</button>
+            <button id="backOnlineHomeBtn" class="online-secondary">Geri</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="onlineLobby" class="online-page">
+        <div class="online-small">LOBI</div>
+        <h2>Oda: <span id="roomCodeText">------</span></h2>
+        <p id="lobbyInfoText">Arkadaşların bu kodla katılabilir.</p>
+
+        <div id="lobbyPlayers" class="lobby-players"></div>
+
+        <button id="goCharacterSelectBtn" class="online-main wide">Karakter Seçimine Geç</button>
+      </div>
+
+      <div id="characterSelectPage" class="online-page">
+        <div class="online-small">KARAKTERİNİ SEÇ</div>
+        <h2>Taşını Seç</h2>
+        <p>Her oyuncu farklı karakter seçer.</p>
+
+        <div id="characterGrid" class="character-grid"></div>
+
+        <div class="online-actions">
+          <button id="backLobbyBtn" class="online-secondary">Lobiye Dön</button>
+          <button id="onlineStartGameBtn" class="online-main">Oyunu Başlat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="settingsOverlay" class="modalOverlay hidden">
+    <div class="settingsModal">
+      <button id="closeSettingsBtn" class="modalClose">×</button>
+
+      <div id="settingsHome" class="settingsPage active">
+        <div class="modalSmall">BARUTPOLY</div>
+        <h2>⚙ AYARLAR</h2>
+        <p>Oyunun ses ve ekran ayarlarını buradan düzenle.</p>
+
+        <button id="soundSettingsBtn" class="settingsBigBtn">
+          <span>🔊</span>
+          <div>
+            <b>Ses Ayarları</b>
+            <small>Efekt, müzik ve ses seviyesi</small>
+          </div>
+        </button>
+
+        <button id="screenSettingsBtn" class="settingsBigBtn">
+          <span>🖥️</span>
+          <div>
+            <b>Ekran Ayarları</b>
+            <small>Tam ekran modu</small>
+          </div>
+        </button>
+
+        <button id="settingsBackMainBtn" class="settingsFooterBtn">GERİ DÖN</button>
+      </div>
+
+      <div id="soundSettingsPage" class="settingsPage">
+        <div class="modalSmall">AYARLAR</div>
+        <h2>🔊 SES AYARLARI</h2>
+
+        <div class="settingRow">
+          <div>
+            <b>Efekt Sesleri</b>
+            <small>Zar, kart, para, buton ve hareket sesleri</small>
+          </div>
+          <button id="effectsToggle" class="toggleBtn">AÇIK</button>
+        </div>
+
+        <div class="settingRow">
+          <div>
+            <b>Müzik</b>
+            <small>Arka plan müziği</small>
+          </div>
+          <button id="musicToggleSetting" class="toggleBtn">AÇIK</button>
+        </div>
+
+        <div class="settingSliderBox">
+          <div class="sliderTop">
+            <b>Ses Seviyesi</b>
+            <strong id="volumeValue">75%</strong>
+          </div>
+          <input id="masterVolumeSlider" type="range" min="0" max="100" value="75">
+        </div>
+
+        <button id="backToSettingsFromSound" class="settingsFooterBtn">GERİ</button>
+      </div>
+
+      <div id="screenSettingsPage" class="settingsPage">
+        <div class="modalSmall">AYARLAR</div>
+        <h2>🖥️ EKRAN AYARLARI</h2>
+
+        <div class="settingRow">
+          <div>
+            <b>Tam Ekran</b>
+            <small>Oyunu ekranın tamamında aç</small>
+          </div>
+          <button id="fullscreenBtn" class="toggleBtn">AÇ</button>
+        </div>
+
+        <button id="backToSettingsFromScreen" class="settingsFooterBtn">GERİ</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div id="howToOverlay" class="howToOverlay hidden">
+    <div class="howToModal">
+      <button id="closeHowToBtn" class="howToClose">×</button>
+
+      <div class="howToHeader">
+        <div class="howToSmall">BARUTPOLY REHBERİ</div>
+        <h2>📖 NASIL OYNANIR?</h2>
+        <p>Semtleri satın al, kiraları topla, rakiplerinden daha zengin ol.</p>
+      </div>
+
+      <div class="howToCards">
+        <div class="howToCard">
+          <span>🎲</span>
+          <b>1. Zar At</b>
+          <p>Sıran geldiğinde zar at. Piyonun çıkan sayı kadar kare kare ilerler.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>🏠</span>
+          <b>2. Semt Satın Al</b>
+          <p>Sahipsiz semte gelirsen satın alabilirsin. Semt seninse kartın sende kalır.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>💰</span>
+          <b>3. Kira Öde / Al</b>
+          <p>Başkasının semtine gelirsen kira ödersin. Senin semtine gelirse kira alırsın.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>🏗️</span>
+          <b>4. Ev ve Otel Kur</b>
+          <p>İleride semtlerine ev ve otel koyarak kirayı büyüteceksin.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>🃏</span>
+          <b>5. Şans Kartları</b>
+          <p>Şans karesine gelirsen kart açılır. Para kazanabilir, vergi ödeyebilir veya kodese gidebilirsin.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>🏛️</span>
+          <b>6. Vergiler</b>
+          <p>Su faturası, elektrik faturası, genel vergi ve lüks vergi karelerinde ödeme yaparsın.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>⛓️</span>
+          <b>7. Kodese Gir</b>
+          <p>Kodese gir karesine gelirsen kodese gidersin. Çıkış kurallarını sonraki sürümde ekleyeceğiz.</p>
+        </div>
+
+        <div class="howToCard">
+          <span>🏆</span>
+          <b>8. Kazanma</b>
+          <p>Oyunun amacı en çok paraya ve en değerli mülklere sahip olmak.</p>
+        </div>
+      </div>
+
+      <div class="howToFooter">
+        <button id="startFromHowToBtn">OYUNA BAŞLA</button>
+        <button id="backFromHowToBtn">MENÜYE DÖN</button>
+      </div>
+    </div>
+  </div>
+
+
+  <audio id="musicAudio"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
