@@ -3524,6 +3524,192 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V38.1 ONLINE LOBBY FLOW FIX ===== */
+
+  let onlineRoomData = null;
+  let onlineRoomDocUnsubscribe = null;
+  let onlineLobbyPlayersCache = [];
+  let onlineIsHost = false;
+
+  function setOnlineHostHint(text, type="info"){
+    const el = $("onlineHostHint");
+    if(!el) return;
+    el.textContent = text;
+    el.dataset.type = type;
+  }
+
+  function updateOnlineLobbyButtons(){
+    const characterBtn = $("goCharacterSelectBtn");
+    const readyBtn = $("onlineReadyBtn");
+    const startBtn = $("onlineStartGameBtn");
+
+    if(characterBtn){
+      characterBtn.disabled = !onlineIsHost;
+      characterBtn.classList.toggle("disabled", !onlineIsHost);
+      characterBtn.textContent = onlineIsHost ? "Karakter Seçimine Geç" : "Host karakter seçimine geçebilir";
+    }
+
+    if(readyBtn){
+      readyBtn.textContent = "Hazırım";
+    }
+
+    if(startBtn){
+      startBtn.disabled = !onlineIsHost;
+      startBtn.classList.toggle("disabled", !onlineIsHost);
+      startBtn.textContent = onlineIsHost ? "Oyunu Başlat" : "Oyunu sadece host başlatabilir";
+    }
+  }
+
+  function listenOnlineRoomDoc(code){
+    if(!initFirebaseLobby()) return;
+
+    if(onlineRoomDocUnsubscribe){
+      onlineRoomDocUnsubscribe();
+      onlineRoomDocUnsubscribe = null;
+    }
+
+    onlineRoomDocUnsubscribe = roomRef(code).onSnapshot((snap) => {
+      onlineRoomData = snap.exists ? snap.data() : null;
+      onlineIsHost = !!onlineRoomData && onlineRoomData.hostId === onlinePlayerId;
+
+      updateOnlineLobbyButtons();
+
+      if(onlineRoomData?.status === "character"){
+        setOnlineHostHint(onlineIsHost ? "Karakter seçimini yönetiyorsun." : "Host karakter seçimini başlattı.", "ok");
+      }else if(onlineRoomData?.status === "started"){
+        setOnlineHostHint("Oyun başlatıldı. Online oyun senkronu V39'da eklenecek.", "ok");
+      }else{
+        setOnlineHostHint(onlineIsHost ? "Bu odanın hostu sensin. Oyuncular hazır olunca karakter seçimine geç." : "Odaya katıldın. Hostun karakter seçimine geçmesini bekle.", "info");
+      }
+    }, (err) => {
+      console.error(err);
+      setOnlineHostHint("Oda bilgisi okunamadı: " + err.message, "error");
+    });
+  }
+
+  const _listenOnlineRoomV381 = listenOnlineRoom;
+  listenOnlineRoom = function(code){
+    _listenOnlineRoomV381(code);
+    listenOnlineRoomDoc(code);
+    updateOnlineLobbyButtons();
+  };
+
+  const _renderFirebaseLobbyPlayersV381 = renderFirebaseLobbyPlayers;
+  renderFirebaseLobbyPlayers = function(roomPlayers){
+    onlineLobbyPlayersCache = roomPlayers || [];
+    _renderFirebaseLobbyPlayersV381(roomPlayers);
+
+    const holder = $("lobbyPlayers");
+    if(holder){
+      holder.classList.add("online-lobby-visible");
+    }
+
+    updateOnlineLobbyButtons();
+  };
+
+  const _toggleOnlineReadyV381 = toggleOnlineReady;
+  toggleOnlineReady = async function(){
+    await _toggleOnlineReadyV381();
+
+    const me = onlineLobbyPlayersCache.find(p => p.id === onlinePlayerId);
+    const btn = $("onlineReadyBtn");
+    if(btn && me){
+      btn.textContent = me.ready ? "Hazırım" : "Hazırım";
+    }
+  };
+
+  goCharacterSelect = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()){
+      showOnlinePage("characterSelectPage");
+      renderCharacters();
+      return;
+    }
+
+    if(!onlineIsHost){
+      setOnlineStatus("Karakter seçimine sadece oda kuran kişi geçebilir.", true);
+      setOnlineHostHint("Hostun karakter seçimine geçmesini bekle.", "error");
+      return;
+    }
+
+    try{
+      await roomRef(onlineCurrentRoomCode).set({
+        status: "character",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+
+      renderCharacters();
+      showOnlinePage("characterSelectPage");
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Karakter seçimi başlatılamadı: " + err.message, true);
+    }
+  };
+
+  onlineStartGameMock = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()){
+      closeOnlineOverlay();
+      showScreen("setup");
+      return;
+    }
+
+    if(!onlineIsHost){
+      setOnlineStatus("Oyunu sadece oda kuran kişi başlatabilir.", true);
+      return;
+    }
+
+    if(!selectedCharacter){
+      setOnlineStatus("Önce karakterini seç.", true);
+      return;
+    }
+
+    const allPlayers = onlineLobbyPlayersCache || [];
+    const missingReady = allPlayers.filter(p => !p.ready && p.id !== onlinePlayerId);
+    const missingCharacter = allPlayers.filter(p => !p.character && p.id !== onlinePlayerId);
+
+    if(allPlayers.length < 2){
+      setOnlineStatus("Oyunu başlatmak için en az 2 oyuncu gerekli.", true);
+      return;
+    }
+
+    if(missingReady.length){
+      setOnlineStatus("Herkes hazır olmadan başlatamazsın.", true);
+      return;
+    }
+
+    if(missingCharacter.length){
+      setOnlineStatus("Herkes karakter seçmeden başlatamazsın.", true);
+      return;
+    }
+
+    try{
+      await roomRef(onlineCurrentRoomCode).set({
+        status: "started",
+        startedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+
+      setOnlineStatus("Online oyun başlatıldı. Oyun senkronu V39'da eklenecek.", false);
+      setOnlineHostHint("V38.1: lobby tamam. V39'da gerçek oyun ekranı senkron bağlanacak.", "ok");
+      showOnlinePage("onlineLobby");
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Oyun başlatılamadı: " + err.message, true);
+    }
+  };
+
+  const _closeOnlineOverlayV381 = closeOnlineOverlay;
+  closeOnlineOverlay = function(){
+    if(onlineRoomDocUnsubscribe){
+      onlineRoomDocUnsubscribe();
+      onlineRoomDocUnsubscribe = null;
+    }
+    _closeOnlineOverlayV381();
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
