@@ -5509,3 +5509,31 @@ html, body{
     width:100% !important;
   }
 }
+
+
+/* ===== V39 ONLINE GAME START UI ===== */
+.online-character-token{
+  width:28px !important;
+  height:28px !important;
+  border-radius:50% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:20px !important;
+  background:rgba(15,23,42,.88) !important;
+  color:white !important;
+  border:2px solid rgba(246,196,83,.85) !important;
+  box-shadow:0 0 14px rgba(246,196,83,.32),0 0 16px currentColor !important;
+}
+
+.player-row b::after{
+  content:"";
+}
+
+@media (hover:none) and (pointer:coarse){
+  .online-character-token{
+    width:18px !important;
+    height:18px !important;
+    font-size:13px !important;
+  }
+}

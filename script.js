@@ -4041,6 +4041,321 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
 
+
+  /* ===== V39 ONLINE GAME START ===== */
+
+  let isOnlineGame = false;
+  let onlineGameRoomCode = null;
+  let onlineGamePlayers = [];
+  let onlineGameUnsubscribe = null;
+
+  function buildOnlinePlayers(finalPlayers){
+    return (finalPlayers || []).map((p, index) => ({
+      id: p.id,
+      name: p.name || `Oyuncu ${index + 1}`,
+      character: p.character || "🚗",
+      host: !!p.host,
+      money: 1500,
+      position: 0,
+      owned: [],
+      housesAvailable: 12,
+      hotelsAvailable: 4,
+      jailTurns: 0,
+      isBot: false,
+      className: `p${index + 1}`
+    }));
+  }
+
+  function decorateOnlineTokens(){
+    if(!isOnlineGame) return;
+
+    players.forEach((p,index) => {
+      const token = $(`playerToken${index}`);
+      if(!token) return;
+      token.classList.add("online-character-token");
+      token.textContent = p.character || "🚗";
+      token.title = p.name;
+    });
+  }
+
+  const _createTokensV39 = createTokens;
+  createTokens = function(){
+    _createTokensV39();
+    decorateOnlineTokens();
+  };
+
+  const _updateTokensV39 = updateTokens;
+  updateTokens = function(){
+    _updateTokensV39();
+    decorateOnlineTokens();
+  };
+
+  function applyOnlineGameState(data){
+    if(!data) return;
+
+    if(Array.isArray(data.players)){
+      onlineGamePlayers = data.players;
+      players = buildOnlinePlayers(data.players);
+    }
+
+    activePlayerIndex = data.activePlayerIndex || 0;
+    hasRolledThisTurn = !!data.hasRolledThisTurn;
+    canEndTurn = !!data.canEndTurn;
+
+    renderPlayers();
+    createBoard();
+    createTokens();
+    refreshTileOwnership();
+    updatePanel();
+    updateTurnButtons();
+    renderLeftPlayerPanel();
+
+    if($("diceTotal")){
+      $("diceTotal").textContent = data.message || "Online oyun başladı.";
+    }
+  }
+
+  async function writeInitialOnlineGameState(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+
+    const finalPlayers = onlineLobbyPlayersCache.map(p => ({
+      id: p.id,
+      name: p.name || "Oyuncu",
+      host: !!p.host,
+      character: p.character || (p.id === onlinePlayerId ? selectedCharacter : "🚗")
+    }));
+
+    await roomRef(onlineCurrentRoomCode).set({
+      status: "playing",
+      gameState: {
+        players: finalPlayers,
+        activePlayerIndex: 0,
+        hasRolledThisTurn: false,
+        canEndTurn: false,
+        round: 1,
+        message: "Online oyun başladı. Sıra ilk oyuncuda."
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  }
+
+  async function startOnlineGameFromRoom(data){
+    if(!data?.gameState) return;
+
+    isOnlineGame = true;
+    onlineGameRoomCode = onlineCurrentRoomCode || data.code || onlineGameRoomCode;
+
+    closeOnlineOverlay();
+
+    showScreen("game");
+    startGameClock?.();
+
+    applyOnlineGameState(data.gameState);
+    setOnlineControls();
+    listenOnlineGameState(onlineGameRoomCode);
+
+    addActivity?.(`🌐 Online oyun başladı. Oda: ${onlineGameRoomCode || "?"}`);
+  }
+
+  function listenOnlineGameState(code){
+    if(!code || !initFirebaseLobby()) return;
+
+    if(onlineGameUnsubscribe){
+      onlineGameUnsubscribe();
+      onlineGameUnsubscribe = null;
+    }
+
+    onlineGameUnsubscribe = roomRef(code).onSnapshot((snap) => {
+      const data = snap.exists ? snap.data() : null;
+      if(!data?.gameState) return;
+
+      if(data.status === "playing"){
+        isOnlineGame = true;
+        applyOnlineGameState(data.gameState);
+        setOnlineControls();
+      }
+    });
+  }
+
+  function isMyOnlineTurn(){
+    if(!isOnlineGame) return true;
+    const current = players[activePlayerIndex];
+    return current?.id === onlinePlayerId;
+  }
+
+  function setOnlineControls(){
+    if(!isOnlineGame) return;
+
+    const myTurn = isMyOnlineTurn();
+    const rollBtn = $("rollDiceBtn");
+    const endBtn = $("endTurnBtn");
+
+    if(rollBtn){
+      rollBtn.disabled = !myTurn || hasRolledThisTurn;
+      rollBtn.textContent = myTurn ? "🎲 Zar At" : "⏳ Rakip Sırası";
+    }
+
+    if(endBtn){
+      endBtn.disabled = !myTurn || !canEndTurn;
+      endBtn.textContent = myTurn ? "✅ Turunu Bitir" : "⏳ Bekle";
+    }
+
+    const pill = $("turnPill");
+    if(pill){
+      const current = players[activePlayerIndex];
+      pill.textContent = myTurn ? `Sıra sende: ${current?.name || ""}` : `Sıra: ${current?.name || ""}`;
+    }
+  }
+
+  const _onlineStartGameMockV39 = onlineStartGameMock;
+  onlineStartGameMock = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()){
+      return _onlineStartGameMockV39();
+    }
+
+    if(!onlineIsHost){
+      setOnlineStatus("Oyunu sadece oda kuran kişi başlatabilir.", true);
+      return;
+    }
+
+    const allPlayers = onlineLobbyPlayersCache || [];
+    const me = allPlayers.find(p => p.id === onlinePlayerId);
+    const meCharacter = me?.character || selectedCharacter;
+
+    if(allPlayers.length < 2){
+      setOnlineStatus("Oyunu başlatmak için en az 2 oyuncu gerekli.", true);
+      return;
+    }
+
+    if(!meCharacter){
+      setOnlineStatus("Önce karakterini seç.", true);
+      return;
+    }
+
+    const notReady = allPlayers.filter(p => p.id !== onlinePlayerId && !p.ready);
+    if(notReady.length){
+      setOnlineStatus("Herkes hazır olmadan başlatamazsın.", true);
+      return;
+    }
+
+    const noCharacter = allPlayers.filter(p => p.id !== onlinePlayerId && !p.character);
+    if(noCharacter.length){
+      setOnlineStatus("Herkes karakter seçmeden başlatamazsın.", true);
+      return;
+    }
+
+    try{
+      await writeInitialOnlineGameState();
+      setOnlineStatus("Online oyun başlatıldı.", false);
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Online oyun başlatılamadı: " + err.message, true);
+    }
+  };
+
+  const _listenOnlineRoomDocV39 = listenOnlineRoomDoc;
+  listenOnlineRoomDoc = function(code){
+    _listenOnlineRoomDocV39(code);
+
+    const unsubPlaySync = roomRef(code).onSnapshot((snap) => {
+      const data = snap.exists ? snap.data() : null;
+      if(data?.status === "playing" && data?.gameState){
+        onlineCurrentRoomCode = code;
+        startOnlineGameFromRoom(data);
+      }
+    });
+
+    const prevClose = closeOnlineOverlay;
+    closeOnlineOverlay = function(){
+      try{ unsubPlaySync?.(); }catch(e){}
+      prevClose();
+    };
+  };
+
+  const _rollDiceV39 = rollDice;
+  rollDice = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    _rollDiceV39();
+
+    if(isOnlineGame && onlineGameRoomCode && initFirebaseLobby()){
+      setTimeout(async () => {
+        try{
+          const statePlayers = players.map(p => ({
+            id:p.id,
+            name:p.name,
+            host:!!p.host,
+            character:p.character || "🚗",
+            money:p.money,
+            position:p.position,
+            owned:p.owned || [],
+            housesAvailable:p.housesAvailable ?? 12,
+            hotelsAvailable:p.hotelsAvailable ?? 4,
+            jailTurns:p.jailTurns || 0
+          }));
+
+          await roomRef(onlineGameRoomCode).set({
+            gameState:{
+              players: statePlayers,
+              activePlayerIndex,
+              hasRolledThisTurn,
+              canEndTurn,
+              message: `${players[activePlayerIndex]?.name || "Oyuncu"} zar attı.`
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, {merge:true});
+        }catch(err){
+          console.error("Online zar state yazılamadı:", err);
+        }
+      }, 1800);
+    }
+  };
+
+  const _finishTurnV39 = finishTurn;
+  finishTurn = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    _finishTurnV39();
+
+    if(isOnlineGame && onlineGameRoomCode && initFirebaseLobby()){
+      try{
+        const statePlayers = players.map(p => ({
+          id:p.id,
+          name:p.name,
+          host:!!p.host,
+          character:p.character || "🚗",
+          money:p.money,
+          position:p.position,
+          owned:p.owned || [],
+          housesAvailable:p.housesAvailable ?? 12,
+          hotelsAvailable:p.hotelsAvailable ?? 4,
+          jailTurns:p.jailTurns || 0
+        }));
+
+        await roomRef(onlineGameRoomCode).set({
+          gameState:{
+            players: statePlayers,
+            activePlayerIndex,
+            hasRolledThisTurn,
+            canEndTurn,
+            message: `Sıra ${players[activePlayerIndex]?.name || "oyuncuda"}.`
+          },
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge:true});
+      }catch(err){
+        console.error("Online tur state yazılamadı:", err);
+      }
+    }
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
