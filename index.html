@@ -351,10 +351,14 @@
         <div class="online-small">LOBI</div>
         <h2>Oda: <span id="roomCodeText">------</span></h2>
         <p id="lobbyInfoText">Arkadaşların bu kodla katılabilir.</p>
+        <div id="onlineStatusText" class="online-status-text">Firebase bağlantısı bekleniyor.</div>
 
         <div id="lobbyPlayers" class="lobby-players"></div>
 
-        <button id="goCharacterSelectBtn" class="online-main wide">Karakter Seçimine Geç</button>
+        <div class="online-lobby-actions">
+          <button id="onlineReadyBtn" class="online-secondary">Hazırım</button>
+          <button id="goCharacterSelectBtn" class="online-main wide">Karakter Seçimine Geç</button>
+        </div>
       </div>
 
       <div id="characterSelectPage" class="online-page">
@@ -520,6 +524,9 @@
 
 
   <audio id="musicAudio"></audio>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
 
   <div id="rotatePhoneOverlay" class="rotate-phone-overlay">

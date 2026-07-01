@@ -3264,6 +3264,266 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
 
+
+  /* ===== V38.0 FIREBASE REAL LOBBY ===== */
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDsTNfQ1nKidFHzTaa44LsoKKVOqC6StoE",
+    authDomain: "barutpolyonline.firebaseapp.com",
+    projectId: "barutpolyonline",
+    storageBucket: "barutpolyonline.firebasestorage.app",
+    messagingSenderId: "59416046600",
+    appId: "1:59416046600:web:6b3e5d8a5bf67e423d75bd",
+    measurementId: "G-N3GDTNESR9"
+  };
+
+  let bpFirebaseApp = null;
+  let bpDb = null;
+  let onlineRoomUnsubscribe = null;
+  let onlineCurrentRoomCode = null;
+  let onlinePlayerId = localStorage.getItem("barutpolyOnlinePlayerId");
+
+  if(!onlinePlayerId){
+    onlinePlayerId = "p_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+    localStorage.setItem("barutpolyOnlinePlayerId", onlinePlayerId);
+  }
+
+  function initFirebaseLobby(){
+    try{
+      if(!window.firebase){
+        setOnlineStatus("Firebase SDK yüklenemedi.", true);
+        return false;
+      }
+      if(!bpFirebaseApp){
+        bpFirebaseApp = firebase.apps?.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+        bpDb = firebase.firestore();
+      }
+      setOnlineStatus("Firebase bağlı.", false);
+      return true;
+    }catch(err){
+      console.error("Firebase init hata:", err);
+      setOnlineStatus("Firebase bağlantı hatası: " + err.message, true);
+      return false;
+    }
+  }
+
+  function setOnlineStatus(text, isError=false){
+    const el = $("onlineStatusText");
+    if(!el) return;
+    el.textContent = text;
+    el.classList.toggle("error", !!isError);
+  }
+
+  function normalizeRoomCode(code){
+    return String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
+  }
+
+  function getOnlineNameFromHome(){
+    return $("onlinePlayerName")?.value.trim()
+      || document.querySelector(".player-name")?.value?.trim()
+      || "Oyuncu";
+  }
+
+  function getOnlineNameFromJoin(){
+    return $("joinPlayerName")?.value.trim()
+      || $("onlinePlayerName")?.value.trim()
+      || document.querySelector(".player-name")?.value?.trim()
+      || "Oyuncu";
+  }
+
+  function roomRef(code){
+    return bpDb.collection("rooms").doc(code);
+  }
+
+  function playersRef(code){
+    return roomRef(code).collection("players");
+  }
+
+  async function generateUniqueRoomCode(){
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    for(let attempt=0; attempt<20; attempt++){
+      let code = "";
+      for(let i=0;i<6;i++) code += chars[Math.floor(Math.random() * chars.length)];
+      const snap = await roomRef(code).get();
+      if(!snap.exists) return code;
+    }
+    return "BP" + Date.now().toString(36).slice(-4).toUpperCase();
+  }
+
+  createOnlineRoom = async function(){
+    if(!initFirebaseLobby()) return;
+    const name = getOnlineNameFromHome();
+    setOnlineStatus("Oda oluşturuluyor...", false);
+
+    try{
+      const code = await generateUniqueRoomCode();
+      onlineCurrentRoomCode = code;
+
+      await roomRef(code).set({
+        code,
+        hostId: onlinePlayerId,
+        status: "lobby",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      await playersRef(code).doc(onlinePlayerId).set({
+        id: onlinePlayerId,
+        name,
+        host: true,
+        ready: false,
+        character: null,
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      $("roomCodeText").textContent = code;
+      $("lobbyInfoText").textContent = "Oda kodunu arkadaşına gönder. Katılanlar burada canlı gözükecek.";
+      showOnlinePage("onlineLobby");
+      listenOnlineRoom(code);
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Oda oluşturulamadı: " + err.message, true);
+    }
+  };
+
+  joinOnlineRoom = async function(){
+    if(!initFirebaseLobby()) return;
+    const name = getOnlineNameFromJoin();
+    const code = normalizeRoomCode($("joinRoomCode")?.value);
+
+    if(!code || code.length < 4){
+      setOnlineStatus("Geçerli bir oda kodu yaz.", true);
+      return;
+    }
+
+    setOnlineStatus("Odaya katılınıyor...", false);
+
+    try{
+      const snap = await roomRef(code).get();
+      if(!snap.exists){
+        setOnlineStatus("Bu oda bulunamadı.", true);
+        return;
+      }
+
+      onlineCurrentRoomCode = code;
+
+      await playersRef(code).doc(onlinePlayerId).set({
+        id: onlinePlayerId,
+        name,
+        host: false,
+        ready: false,
+        character: null,
+        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+
+      $("roomCodeText").textContent = code;
+      $("lobbyInfoText").textContent = "Odaya katıldın. Oyuncular canlı güncelleniyor.";
+      showOnlinePage("onlineLobby");
+      listenOnlineRoom(code);
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Odaya katılamadın: " + err.message, true);
+    }
+  };
+
+  function listenOnlineRoom(code){
+    if(!initFirebaseLobby()) return;
+    if(onlineRoomUnsubscribe){
+      onlineRoomUnsubscribe();
+      onlineRoomUnsubscribe = null;
+    }
+
+    onlineRoomUnsubscribe = playersRef(code)
+      .orderBy("joinedAt", "asc")
+      .onSnapshot((snapshot) => {
+        const roomPlayers = [];
+        snapshot.forEach(doc => roomPlayers.push(doc.data()));
+        renderFirebaseLobbyPlayers(roomPlayers);
+        setOnlineStatus(`${roomPlayers.length} oyuncu lobide.`, false);
+      }, (err) => {
+        console.error(err);
+        setOnlineStatus("Lobby dinleme hatası: " + err.message, true);
+      });
+  }
+
+  function escapeHTML(value){
+    return String(value ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function renderFirebaseLobbyPlayers(roomPlayers){
+    const holder = $("lobbyPlayers");
+    if(!holder) return;
+
+    if(!roomPlayers.length){
+      holder.innerHTML = `<div class="lobby-player"><div class="lobby-avatar">⏳</div><div><b>Oyuncu bekleniyor...</b><span>Lobby boş</span></div><strong></strong></div>`;
+      return;
+    }
+
+    holder.innerHTML = roomPlayers.map((p) => {
+      const avatar = p.character || (p.host ? "👑" : "👤");
+      const you = p.id === onlinePlayerId ? " • SEN" : "";
+      const tag = p.host ? "HOST" : "OYUNCU";
+      const ready = p.ready ? "Hazır" : "Bekliyor";
+      return `
+        <div class="lobby-player ${p.id === onlinePlayerId ? "me" : ""}">
+          <div class="lobby-avatar">${avatar}</div>
+          <div>
+            <b>${escapeHTML(p.name || "Oyuncu")}${you}</b>
+            <span>${tag}</span>
+          </div>
+          <strong>${ready}</strong>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function toggleOnlineReady(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+    const ref = playersRef(onlineCurrentRoomCode).doc(onlinePlayerId);
+    const snap = await ref.get();
+    const current = snap.exists ? !!snap.data().ready : false;
+    await ref.set({
+      ready: !current,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    playSound("click");
+  }
+
+  async function saveSelectedCharacterToFirebase(){
+    if(!onlineCurrentRoomCode || !selectedCharacter || !initFirebaseLobby()) return;
+    await playersRef(onlineCurrentRoomCode).doc(onlinePlayerId).set({
+      character: selectedCharacter,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  }
+
+  const _renderCharactersV38 = renderCharacters;
+  renderCharacters = function(){
+    _renderCharactersV38();
+    document.querySelectorAll(".character-option").forEach(btn => {
+      btn.addEventListener("click", () => setTimeout(saveSelectedCharacterToFirebase, 80));
+    });
+  };
+
+  const _closeOnlineOverlayV38 = closeOnlineOverlay;
+  closeOnlineOverlay = function(){
+    if(onlineRoomUnsubscribe){
+      onlineRoomUnsubscribe();
+      onlineRoomUnsubscribe = null;
+    }
+    _closeOnlineOverlayV38();
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -3325,6 +3585,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("showJoinRoomBtn")?.addEventListener("click", openJoinRoom);
   $("joinRoomBtn")?.addEventListener("click", joinOnlineRoom);
   $("backOnlineHomeBtn")?.addEventListener("click", () => showOnlinePage("onlineHome"));
+  $("onlineReadyBtn")?.addEventListener("click", toggleOnlineReady);
   $("goCharacterSelectBtn")?.addEventListener("click", goCharacterSelect);
   $("backLobbyBtn")?.addEventListener("click", () => showOnlinePage("onlineLobby"));
   $("onlineStartGameBtn")?.addEventListener("click", onlineStartGameMock);
