@@ -3164,7 +3164,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function showOnlinePage(pageId){
-    ["onlineHome","onlineJoin","onlineLobby","characterSelectPage"].forEach(id => {
+    ["onlineHome","onlineJoin","onlineLobby","characterSelectPage","onlinePreparingPage"].forEach(id => {
       $(id)?.classList.toggle("active", id === pageId);
     });
   }
@@ -3710,6 +3710,214 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V38.2 ONLINE CHARACTER SYSTEM ===== */
+
+  function getTakenCharacters(){
+    const taken = new Map();
+    (onlineLobbyPlayersCache || []).forEach(p => {
+      if(p.character) taken.set(p.character, p);
+    });
+    return taken;
+  }
+
+  function canCurrentPlayerUseCharacter(ch){
+    const taken = getTakenCharacters();
+    const owner = taken.get(ch);
+    return !owner || owner.id === onlinePlayerId;
+  }
+
+  async function selectOnlineCharacter(ch){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+
+    if(!canCurrentPlayerUseCharacter(ch)){
+      const owner = getTakenCharacters().get(ch);
+      setOnlineStatus(`${ch} karakteri ${owner?.name || "başka oyuncu"} tarafından seçildi.`, true);
+      return;
+    }
+
+    selectedCharacter = ch;
+    await playersRef(onlineCurrentRoomCode).doc(onlinePlayerId).set({
+      character: ch,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+
+    setOnlineStatus(`${ch} karakteri seçildi.`, false);
+    renderCharacters();
+    playSound("click");
+  }
+
+  renderCharacters = function(){
+    const grid = $("characterGrid");
+    if(!grid) return;
+
+    const taken = getTakenCharacters();
+    grid.innerHTML = "";
+
+    characterOptions.forEach(ch => {
+      const owner = taken.get(ch);
+      const isMine = owner?.id === onlinePlayerId;
+      const isTaken = !!owner && !isMine;
+
+      const btn = document.createElement("button");
+      btn.className = `character-option ${selectedCharacter === ch || isMine ? "selected" : ""} ${isTaken ? "taken" : ""}`;
+      btn.type = "button";
+      btn.innerHTML = `<span>${ch}</span>${isTaken ? `<small>${escapeHTML(owner.name || "Dolu")}</small>` : ""}`;
+
+      btn.disabled = isTaken;
+      btn.title = isTaken ? `${owner.name || "Oyuncu"} seçti` : "Seç";
+
+      btn.addEventListener("click", () => selectOnlineCharacter(ch));
+      grid.appendChild(btn);
+    });
+  };
+
+  const _renderFirebaseLobbyPlayersV382 = renderFirebaseLobbyPlayers;
+  renderFirebaseLobbyPlayers = function(roomPlayers){
+    onlineLobbyPlayersCache = roomPlayers || [];
+    _renderFirebaseLobbyPlayersV382(roomPlayers);
+
+    if($("characterSelectPage")?.classList.contains("active")){
+      renderCharacters();
+    }
+
+    updateStartRequirementText();
+  };
+
+  function updateStartRequirementText(){
+    const startBtn = $("onlineStartGameBtn");
+    if(!startBtn) return;
+
+    const all = onlineLobbyPlayersCache || [];
+    const everyoneReady = all.length >= 2 && all.every(p => p.ready || p.id === onlinePlayerId);
+    const everyoneHasCharacter = all.length >= 2 && all.every(p => !!p.character || p.id === onlinePlayerId);
+    const meHasCharacter = !!(all.find(p => p.id === onlinePlayerId)?.character || selectedCharacter);
+
+    if(!onlineIsHost){
+      startBtn.textContent = "Oyunu sadece host başlatabilir";
+      return;
+    }
+
+    if(all.length < 2){
+      startBtn.textContent = "En az 2 oyuncu gerekli";
+      return;
+    }
+
+    if(!meHasCharacter){
+      startBtn.textContent = "Önce karakterini seç";
+      return;
+    }
+
+    if(!everyoneReady){
+      startBtn.textContent = "Herkes hazır olmalı";
+      return;
+    }
+
+    if(!everyoneHasCharacter){
+      startBtn.textContent = "Herkes karakter seçmeli";
+      return;
+    }
+
+    startBtn.textContent = "Oyunu Başlat";
+  }
+
+  function renderOnlinePreparingPlayers(){
+    const holder = $("onlineFinalPlayers");
+    if(!holder) return;
+
+    const all = onlineLobbyPlayersCache || [];
+    holder.innerHTML = all.map(p => `
+      <div class="online-final-player">
+        <span>${p.character || "❔"}</span>
+        <b>${escapeHTML(p.name || "Oyuncu")}</b>
+        <small>${p.host ? "HOST" : "OYUNCU"}</small>
+      </div>
+    `).join("");
+  }
+
+  onlineStartGameMock = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()){
+      return;
+    }
+
+    if(!onlineIsHost){
+      setOnlineStatus("Oyunu sadece oda kuran kişi başlatabilir.", true);
+      return;
+    }
+
+    const allPlayers = onlineLobbyPlayersCache || [];
+    const me = allPlayers.find(p => p.id === onlinePlayerId);
+    const meCharacter = me?.character || selectedCharacter;
+
+    if(allPlayers.length < 2){
+      setOnlineStatus("Oyunu başlatmak için en az 2 oyuncu gerekli.", true);
+      return;
+    }
+
+    if(!meCharacter){
+      setOnlineStatus("Önce karakterini seç.", true);
+      return;
+    }
+
+    const notReady = allPlayers.filter(p => p.id !== onlinePlayerId && !p.ready);
+    if(notReady.length){
+      setOnlineStatus("Herkes hazır olmadan başlatamazsın.", true);
+      return;
+    }
+
+    const noCharacter = allPlayers.filter(p => p.id !== onlinePlayerId && !p.character);
+    if(noCharacter.length){
+      setOnlineStatus("Herkes karakter seçmeden başlatamazsın.", true);
+      return;
+    }
+
+    try{
+      await roomRef(onlineCurrentRoomCode).set({
+        status: "preparing",
+        finalPlayers: allPlayers.map(p => ({
+          id: p.id,
+          name: p.name || "Oyuncu",
+          host: !!p.host,
+          character: p.id === onlinePlayerId ? meCharacter : p.character
+        })),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+
+      renderOnlinePreparingPlayers();
+      showOnlinePage("onlinePreparingPage");
+      setOnlineStatus("Online oyun hazırlanıyor.", false);
+      playSound("click");
+    }catch(err){
+      console.error(err);
+      setOnlineStatus("Oyun hazırlanamadı: " + err.message, true);
+    }
+  };
+
+  const _listenOnlineRoomDocV382 = listenOnlineRoomDoc;
+  listenOnlineRoomDoc = function(code){
+    if(!_listenOnlineRoomDocV382) return;
+    _listenOnlineRoomDocV382(code);
+
+    // Ek dinleyici: oda preparing olursa herkes hazırlık ekranına geçsin.
+    const extraUnsub = roomRef(code).onSnapshot((snap) => {
+      const data = snap.exists ? snap.data() : null;
+      if(data?.status === "preparing" || data?.status === "started"){
+        if(Array.isArray(data.finalPlayers)){
+          onlineLobbyPlayersCache = data.finalPlayers;
+        }
+        renderOnlinePreparingPlayers();
+        showOnlinePage("onlinePreparingPage");
+      }
+    });
+
+    const oldClose = closeOnlineOverlay;
+    closeOnlineOverlay = function(){
+      extraUnsub?.();
+      oldClose();
+    };
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -3775,6 +3983,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("goCharacterSelectBtn")?.addEventListener("click", goCharacterSelect);
   $("backLobbyBtn")?.addEventListener("click", () => showOnlinePage("onlineLobby"));
   $("onlineStartGameBtn")?.addEventListener("click", onlineStartGameMock);
+  $("backToLobbyFromPreparingBtn")?.addEventListener("click", () => showOnlinePage("onlineLobby"));
   $("onlineOverlay")?.addEventListener("click", (e) => { if(e.target === $("onlineOverlay")) closeOnlineOverlay(); });
 
   $("intro").addEventListener("click", () => {
