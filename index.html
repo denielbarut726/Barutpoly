@@ -166,6 +166,7 @@
       <button id="myPropertiesBtn" class="panel-btn">⌂ Mülklerim</button>
       <button id="cardsPanelBtn" class="panel-btn">▣ Kartlar</button>
       <button id="gameSettingsBtn" class="panel-btn">⚙ Ayarlar</button>
+      <button id="exitGameBtn" class="panel-btn danger-exit">🚪 Oyundan Çık</button>
   </aside>
 
     <div id="activityPanel" class="activity-panel">
@@ -382,6 +383,7 @@
         <div class="online-actions">
           <button id="backLobbyBtn" class="online-secondary">Lobiye Dön</button>
           <button id="onlineStartGameBtn" class="online-main">Oyunu Başlat</button>
+          <button id="backCharacterLobbyBtn" class="online-secondary online-back-center">Geri Dön</button>
         </div>
       </div>
     </div>
@@ -547,5 +549,19 @@
       <p>BarutPoly telefonda yatay ekranda oynanır.</p>
     </div>
   </div>
+
+  <div id="exitGameOverlay" class="exit-game-overlay hidden">
+    <div class="exit-game-card">
+      <button id="closeExitGameBtn" class="exit-game-close">×</button>
+      <div class="exit-game-icon">🚪</div>
+      <h2>Oyundan Çık</h2>
+      <p>Mevcut klasik oyun kapanacak ve ana menüye döneceksin.</p>
+      <div class="exit-game-actions">
+        <button id="cancelExitGameBtn" class="exit-cancel">Vazgeç</button>
+        <button id="confirmExitGameBtn" class="exit-confirm">Ana Menüye Dön</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

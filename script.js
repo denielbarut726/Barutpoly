@@ -3918,6 +3918,129 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V38.3 EXIT + CHARACTER SYNC FIX ===== */
+
+  function openExitGameOverlay(){
+    const overlay = $("exitGameOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeExitGameOverlay(){
+    const overlay = $("exitGameOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  function resetClassicGameAndGoMenu(){
+    try{
+      stopAllLoopSounds();
+      closeCard?.();
+      closeSettings?.();
+      closeSideInfo?.();
+      closeExitGameOverlay();
+
+      players = [];
+      activePlayerIndex = 0;
+      selectedPlayerCount = 2;
+      currentOpenSpaceIndex = null;
+      currentBuyerIndex = null;
+      pendingRent = null;
+      pendingChancePlayerIndex = null;
+      chanceCardActive = false;
+      buildMode = null;
+      hasRolledThisTurn = false;
+      canEndTurn = false;
+      auctionState = null;
+      activityLog = [];
+
+      clearInterval(gameTimer);
+      gameTimer = null;
+      gameStartedAt = null;
+
+      document.querySelectorAll(".tile").forEach(tile => {
+        tile.classList.remove("owned","build-target","build-blocked");
+        tile.style.removeProperty("--owner-color");
+        tile.querySelector(".owner-badge")?.remove();
+        tile.querySelector(".build-marker")?.remove();
+      });
+
+      const tokenLayer = $("tokenLayer");
+      if(tokenLayer) tokenLayer.innerHTML = "";
+
+      if($("diceOne")) $("diceOne").textContent = "⚀";
+      if($("diceTwo")) $("diceTwo").textContent = "⚀";
+      if($("diceTotal")) $("diceTotal").textContent = "Toplam: -";
+
+      renderNameInputs?.();
+      showScreen("menu");
+    }catch(err){
+      console.error("Oyundan çıkış hatası:", err);
+      location.reload();
+    }
+  }
+
+  // Online karakter ekranı senkronu:
+  // Host status=character yapınca tüm cihazlar otomatik karakter sayfasına geçer.
+  const _listenOnlineRoomDocV383 = listenOnlineRoomDoc;
+  listenOnlineRoomDoc = function(code){
+    _listenOnlineRoomDocV383(code);
+
+    const unsubCharacterSync = roomRef(code).onSnapshot((snap) => {
+      const data = snap.exists ? snap.data() : null;
+      if(!data) return;
+
+      if(data.status === "character"){
+        if(!$("characterSelectPage")?.classList.contains("active")){
+          renderCharacters();
+          showOnlinePage("characterSelectPage");
+          setOnlineStatus("Host karakter seçimini başlattı.", false);
+        }
+      }
+
+      if(data.status === "lobby"){
+        if($("characterSelectPage")?.classList.contains("active") || $("onlinePreparingPage")?.classList.contains("active")){
+          showOnlinePage("onlineLobby");
+        }
+      }
+
+      if(data.status === "preparing" || data.status === "started"){
+        if(Array.isArray(data.finalPlayers)){
+          onlineLobbyPlayersCache = data.finalPlayers;
+        }
+        renderOnlinePreparingPlayers?.();
+        showOnlinePage("onlinePreparingPage");
+      }
+    });
+
+    const prevClose = closeOnlineOverlay;
+    closeOnlineOverlay = function(){
+      try{ unsubCharacterSync?.(); }catch(e){}
+      prevClose();
+    };
+  };
+
+  async function backFromCharacterToLobby(){
+    if(onlineCurrentRoomCode && onlineIsHost && initFirebaseLobby()){
+      try{
+        await roomRef(onlineCurrentRoomCode).set({
+          status: "lobby",
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge:true});
+      }catch(err){
+        console.error(err);
+      }
+    }
+    showOnlinePage("onlineLobby");
+    playSound("click");
+  }
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -3985,6 +4108,13 @@ window.addEventListener("DOMContentLoaded", () => {
   $("onlineStartGameBtn")?.addEventListener("click", onlineStartGameMock);
   $("backToLobbyFromPreparingBtn")?.addEventListener("click", () => showOnlinePage("onlineLobby"));
   $("onlineOverlay")?.addEventListener("click", (e) => { if(e.target === $("onlineOverlay")) closeOnlineOverlay(); });
+
+  $("exitGameBtn")?.addEventListener("click", openExitGameOverlay);
+  $("closeExitGameBtn")?.addEventListener("click", closeExitGameOverlay);
+  $("cancelExitGameBtn")?.addEventListener("click", closeExitGameOverlay);
+  $("confirmExitGameBtn")?.addEventListener("click", resetClassicGameAndGoMenu);
+  $("exitGameOverlay")?.addEventListener("click", (e) => { if(e.target === $("exitGameOverlay")) closeExitGameOverlay(); });
+  $("backCharacterLobbyBtn")?.addEventListener("click", backFromCharacterToLobby);
 
   $("intro").addEventListener("click", () => {
     playMusic();
