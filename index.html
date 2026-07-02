@@ -45,7 +45,7 @@
       <button id="profileBtn" class="menuBtn"><span>👤</span><b>PROFİL</b></button>
       <button id="themesBtn" class="menuBtn"><span>🎨</span><b>TEMALAR</b></button>
       <div class="version">
-        <div>v1.0 Family.2</div>
+        <div>v1.1 Multilang.2</div>
         <div class="creator">By Deniel Demir Barut</div>
       </div>
     </div>
@@ -620,22 +620,51 @@
       <div id="themeGrid" class="theme-grid theme-grid-large"></div>
     </div>
   </div>
-<div id="finalSettingsOverlay" class="profile-overlay hidden">
-    <div class="profile-card settings-final-card">
+
+  <div id="finalSettingsOverlay" class="profile-overlay hidden">
+    <div class="profile-card settings-final-card settings-premium-card">
       <button id="closeFinalSettingsBtn" class="profile-close">×</button>
-      <div class="profile-small">BARUTPOLY AYARLAR</div>
-      <h2>Oyun Ayarları</h2>
-      <div class="final-settings-list">
-        <label><span>🔊 Ses Efektleri</span><input id="settingSfx" type="checkbox" checked></label>
-        <label><span>🎵 Müzik</span><input id="settingMusic" type="checkbox" checked></label>
-        <label><span>✨ Animasyonlar</span><input id="settingAnimations" type="checkbox" checked></label>
-        <label><span>⚡ Performans Modu</span><input id="settingPerf" type="checkbox"></label>
+      <div class="profile-small" data-i18n="settingsSmall">BARUTPOLY AYARLAR</div>
+      <h2 data-i18n="settingsTitle">Ayarlar</h2>
+
+      <div class="final-settings-list premium-settings-list">
+        <label>
+          <span data-i18n="sfx">🔊 Ses Efektleri</span>
+          <input id="settingSfx" type="checkbox" checked>
+        </label>
+        <label>
+          <span data-i18n="music">🎵 Arka Plan Müziği</span>
+          <input id="settingMusic" type="checkbox" checked>
+        </label>
+        <label>
+          <span data-i18n="animations">✨ Animasyonlar</span>
+          <input id="settingAnimations" type="checkbox" checked>
+        </label>
+        <label>
+          <span data-i18n="performance">⚡ Performans Modu</span>
+          <input id="settingPerf" type="checkbox">
+        </label>
       </div>
-      <button id="saveFinalSettingsBtn" class="trade-confirm">Ayarları Kaydet</button>
+
+      <div class="language-section">
+        <div class="language-title" data-i18n="language">🌐 Dil</div>
+        <div id="languageGrid" class="language-grid">
+          <button class="language-option" data-lang="tr">🇹🇷 <b>Türkçe</b></button>
+          <button class="language-option" data-lang="en">🇬🇧 <b>English</b></button>
+          <button class="language-option" data-lang="ru">🇷🇺 <b>Русский</b></button>
+          <button class="language-option" data-lang="de">🇩🇪 <b>Deutsch</b></button>
+          <button class="language-option" data-lang="fr">🇫🇷 <b>Français</b></button>
+          <button class="language-option" data-lang="es">🇪🇸 <b>Español</b></button>
+          <button class="language-option" data-lang="it">🇮🇹 <b>Italiano</b></button>
+          <button class="language-option" data-lang="ar">🇸🇦 <b>العربية</b></button>
+        </div>
+      </div>
+
+      <button id="saveFinalSettingsBtn" class="trade-confirm" data-i18n="saveSettings">Ayarları Kaydet</button>
+      <div class="settings-footer">BarutPoly Family Edition • v1.1</div>
     </div>
   </div>
-
-  <div id="onlineSyncPill" class="online-sync-pill hidden">🌐 Online</div>
+<div id="onlineSyncPill" class="online-sync-pill hidden">🌐 Online</div>
 
   <div id="finalToastHolder" class="final-toast-holder"></div>
   <div id="finalLoadingOverlay" class="final-loading-overlay hidden">

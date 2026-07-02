@@ -7194,3 +7194,105 @@ body[data-theme] #board{
 }
 
 #tradeBtn,.trade-overlay{display:none !important;}
+
+
+/* ===== V53 MULTILANGUAGE SETTINGS UI ===== */
+
+.settings-premium-card{
+  width:min(760px,94vw) !important;
+  padding:28px !important;
+}
+
+.premium-settings-list{
+  margin:18px 0 !important;
+}
+
+.language-section{
+  margin:18px 0 16px;
+  padding:16px;
+  border-radius:20px;
+  background:rgba(15,23,42,.70);
+  border:1px solid rgba(125,211,252,.20);
+}
+
+.language-title{
+  color:var(--gold,#F6C453);
+  font-weight:900;
+  letter-spacing:1px;
+  margin-bottom:12px;
+  text-align:center;
+}
+
+.language-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:9px;
+}
+
+.language-option{
+  min-height:54px;
+  border:none;
+  border-radius:14px;
+  background:rgba(2,6,23,.70);
+  border:1px solid rgba(255,255,255,.10);
+  color:white;
+  cursor:pointer;
+  font-size:15px;
+  font-weight:900;
+  transition:.18s ease;
+}
+
+.language-option b{
+  display:block;
+  margin-top:3px;
+  font-size:12px;
+}
+
+.language-option:hover{
+  transform:translateY(-2px);
+  border-color:rgba(246,196,83,.45);
+}
+
+.language-option.active{
+  outline:2px solid var(--gold,#F6C453);
+  background:linear-gradient(180deg,rgba(246,196,83,.18),rgba(168,85,247,.16));
+  box-shadow:0 0 20px rgba(246,196,83,.16);
+}
+
+.settings-footer{
+  margin-top:14px;
+  text-align:center;
+  color:#94a3b8;
+  font-weight:900;
+  font-size:12px;
+  letter-spacing:1px;
+}
+
+.rtl-ui{
+  direction:rtl;
+}
+
+.rtl-ui .menuBtn{
+  flex-direction:row-reverse;
+}
+
+.rtl-ui .chat-message,
+.rtl-ui .profile-card,
+.rtl-ui .settings-premium-card{
+  text-align:right;
+}
+
+.rtl-ui .profile-close{
+  right:auto;
+  left:14px;
+}
+
+@media (max-width:700px){
+  .language-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .settings-premium-card{
+    padding:20px !important;
+  }
+}

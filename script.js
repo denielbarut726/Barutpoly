@@ -7141,6 +7141,144 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+
+  /* ===== V53 MULTILANGUAGE SETTINGS ===== */
+
+  const BP_LANG_KEY = "barutpolyLanguage";
+  const BP_SUPPORTED_LANGS = ["tr","en","ru","de","fr","es","it","ar"];
+
+  const BP_I18N = {
+    tr:{
+      play:"OYUNA BAŞLA", continueGame:"KAYITLI OYUNA DEVAM ET", online:"ONLINE OYNA", settings:"AYARLAR", howTo:"NASIL OYNANIR?", profile:"PROFİL", themes:"TEMALAR",
+      settingsSmall:"BARUTPOLY AYARLAR", settingsTitle:"Ayarlar", sfx:"🔊 Ses Efektleri", music:"🎵 Arka Plan Müziği", animations:"✨ Animasyonlar", performance:"⚡ Performans Modu", language:"🌐 Dil", saveSettings:"Ayarları Kaydet",
+      ready:"Hazırım", startGame:"Oyunu Başlat", back:"Geri Dön", exitGame:"🚪 Oyundan Çık", dailyReward:"🎁 Günlük Ödül", profileTitle:"Profil", themesTitle:"Temalar",
+      roll:"🎲 Zar At", endTurn:"✅ Turunu Bitir", properties:"⌂ Mülklerim", cards:"▣ Kartlar", saveToast:"Dil değiştirildi."
+    },
+    en:{
+      play:"PLAY", continueGame:"CONTINUE SAVED GAME", online:"PLAY ONLINE", settings:"SETTINGS", howTo:"HOW TO PLAY?", profile:"PROFILE", themes:"THEMES",
+      settingsSmall:"BARUTPOLY SETTINGS", settingsTitle:"Settings", sfx:"🔊 Sound Effects", music:"🎵 Background Music", animations:"✨ Animations", performance:"⚡ Performance Mode", language:"🌐 Language", saveSettings:"Save Settings",
+      ready:"Ready", startGame:"Start Game", back:"Back", exitGame:"🚪 Exit Game", dailyReward:"🎁 Daily Reward", profileTitle:"Profile", themesTitle:"Themes",
+      roll:"🎲 Roll Dice", endTurn:"✅ End Turn", properties:"⌂ My Properties", cards:"▣ Cards", saveToast:"Language changed."
+    },
+    ru:{
+      play:"ИГРАТЬ", continueGame:"ПРОДОЛЖИТЬ ИГРУ", online:"ОНЛАЙН ИГРА", settings:"НАСТРОЙКИ", howTo:"КАК ИГРАТЬ?", profile:"ПРОФИЛЬ", themes:"ТЕМЫ",
+      settingsSmall:"НАСТРОЙКИ BARUTPOLY", settingsTitle:"Настройки", sfx:"🔊 Звуковые эффекты", music:"🎵 Фоновая музыка", animations:"✨ Анимации", performance:"⚡ Режим производительности", language:"🌐 Язык", saveSettings:"Сохранить",
+      ready:"Готов", startGame:"Начать игру", back:"Назад", exitGame:"🚪 Выйти", dailyReward:"🎁 Ежедневная награда", profileTitle:"Профиль", themesTitle:"Темы",
+      roll:"🎲 Бросить кубики", endTurn:"✅ Завершить ход", properties:"⌂ Мои владения", cards:"▣ Карты", saveToast:"Язык изменён."
+    },
+    de:{
+      play:"SPIELEN", continueGame:"GESPEICHERTES SPIEL", online:"ONLINE SPIELEN", settings:"EINSTELLUNGEN", howTo:"WIE SPIELT MAN?", profile:"PROFIL", themes:"THEMEN",
+      settingsSmall:"BARUTPOLY EINSTELLUNGEN", settingsTitle:"Einstellungen", sfx:"🔊 Soundeffekte", music:"🎵 Hintergrundmusik", animations:"✨ Animationen", performance:"⚡ Leistungsmodus", language:"🌐 Sprache", saveSettings:"Speichern",
+      ready:"Bereit", startGame:"Spiel starten", back:"Zurück", exitGame:"🚪 Spiel verlassen", dailyReward:"🎁 Tägliche Belohnung", profileTitle:"Profil", themesTitle:"Themen",
+      roll:"🎲 Würfeln", endTurn:"✅ Zug beenden", properties:"⌂ Meine Grundstücke", cards:"▣ Karten", saveToast:"Sprache geändert."
+    },
+    fr:{
+      play:"JOUER", continueGame:"CONTINUER", online:"JOUER EN LIGNE", settings:"PARAMÈTRES", howTo:"COMMENT JOUER ?", profile:"PROFIL", themes:"THÈMES",
+      settingsSmall:"PARAMÈTRES BARUTPOLY", settingsTitle:"Paramètres", sfx:"🔊 Effets sonores", music:"🎵 Musique", animations:"✨ Animations", performance:"⚡ Mode performance", language:"🌐 Langue", saveSettings:"Enregistrer",
+      ready:"Prêt", startGame:"Démarrer", back:"Retour", exitGame:"🚪 Quitter", dailyReward:"🎁 Récompense quotidienne", profileTitle:"Profil", themesTitle:"Thèmes",
+      roll:"🎲 Lancer", endTurn:"✅ Fin du tour", properties:"⌂ Mes propriétés", cards:"▣ Cartes", saveToast:"Langue changée."
+    },
+    es:{
+      play:"JUGAR", continueGame:"CONTINUAR PARTIDA", online:"JUGAR ONLINE", settings:"AJUSTES", howTo:"¿CÓMO JUGAR?", profile:"PERFIL", themes:"TEMAS",
+      settingsSmall:"AJUSTES BARUTPOLY", settingsTitle:"Ajustes", sfx:"🔊 Efectos de sonido", music:"🎵 Música", animations:"✨ Animaciones", performance:"⚡ Modo rendimiento", language:"🌐 Idioma", saveSettings:"Guardar",
+      ready:"Listo", startGame:"Iniciar juego", back:"Volver", exitGame:"🚪 Salir", dailyReward:"🎁 Recompensa diaria", profileTitle:"Perfil", themesTitle:"Temas",
+      roll:"🎲 Tirar dados", endTurn:"✅ Terminar turno", properties:"⌂ Mis propiedades", cards:"▣ Cartas", saveToast:"Idioma cambiado."
+    },
+    it:{
+      play:"GIOCA", continueGame:"CONTINUA PARTITA", online:"GIOCA ONLINE", settings:"IMPOSTAZIONI", howTo:"COME SI GIOCA?", profile:"PROFILO", themes:"TEMI",
+      settingsSmall:"IMPOSTAZIONI BARUTPOLY", settingsTitle:"Impostazioni", sfx:"🔊 Effetti sonori", music:"🎵 Musica", animations:"✨ Animazioni", performance:"⚡ Modalità prestazioni", language:"🌐 Lingua", saveSettings:"Salva",
+      ready:"Pronto", startGame:"Inizia gioco", back:"Indietro", exitGame:"🚪 Esci", dailyReward:"🎁 Premio giornaliero", profileTitle:"Profilo", themesTitle:"Temi",
+      roll:"🎲 Lancia dadi", endTurn:"✅ Fine turno", properties:"⌂ Le mie proprietà", cards:"▣ Carte", saveToast:"Lingua cambiata."
+    },
+    ar:{
+      play:"ابدأ اللعب", continueGame:"متابعة اللعبة", online:"اللعب أونلاين", settings:"الإعدادات", howTo:"طريقة اللعب", profile:"الملف الشخصي", themes:"الثيمات",
+      settingsSmall:"إعدادات BARUTPOLY", settingsTitle:"الإعدادات", sfx:"🔊 المؤثرات الصوتية", music:"🎵 موسيقى الخلفية", animations:"✨ الحركات", performance:"⚡ وضع الأداء", language:"🌐 اللغة", saveSettings:"حفظ الإعدادات",
+      ready:"جاهز", startGame:"ابدأ اللعبة", back:"رجوع", exitGame:"🚪 خروج", dailyReward:"🎁 المكافأة اليومية", profileTitle:"الملف الشخصي", themesTitle:"الثيمات",
+      roll:"🎲 ارمي النرد", endTurn:"✅ إنهاء الدور", properties:"⌂ ممتلكاتي", cards:"▣ البطاقات", saveToast:"تم تغيير اللغة."
+    }
+  };
+
+  function getLang(){
+    const saved = localStorage.getItem(BP_LANG_KEY) || "tr";
+    return BP_SUPPORTED_LANGS.includes(saved) ? saved : "tr";
+  }
+
+  function t(key){
+    const lang = getLang();
+    return BP_I18N[lang]?.[key] || BP_I18N.tr[key] || key;
+  }
+
+  function setLang(lang){
+    if(!BP_SUPPORTED_LANGS.includes(lang)) lang = "tr";
+    localStorage.setItem(BP_LANG_KEY, lang);
+    applyLanguage();
+    showFinalToast?.(t("saveToast"), "ok");
+  }
+
+  function setButtonText(id, value){
+    const el = $(id);
+    if(!el) return;
+    const b = el.querySelector("b");
+    if(b) b.textContent = value;
+    else el.textContent = value;
+  }
+
+  function applyLanguage(){
+    const lang = getLang();
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.body.classList.toggle("rtl-ui", lang === "ar");
+
+    setButtonText("startBtn", t("play"));
+    setButtonText("continueSaveBtn", t("continueGame"));
+    setButtonText("onlineBtn", t("online"));
+    setButtonText("settingsBtn", t("settings"));
+    setButtonText("howToBtn", t("howTo"));
+    setButtonText("profileBtn", t("profile"));
+    setButtonText("themesBtn", t("themes"));
+
+    if($("rollDiceBtn") && !isOnlineGame) $("rollDiceBtn").textContent = t("roll");
+    if($("endTurnBtn") && !isOnlineGame) $("endTurnBtn").textContent = t("endTurn");
+    if($("myPropertiesBtn")) $("myPropertiesBtn").textContent = t("properties");
+    if($("cardsPanelBtn")) $("cardsPanelBtn").textContent = t("cards");
+    if($("exitGameBtn")) $("exitGameBtn").textContent = t("exitGame");
+
+    if($("onlineReadyBtn")) $("onlineReadyBtn").textContent = t("ready");
+    if($("onlineStartGameBtn")) $("onlineStartGameBtn").textContent = t("startGame");
+    if($("backCharacterLobbyBtn")) $("backCharacterLobbyBtn").textContent = t("back");
+
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.dataset.i18n;
+      el.textContent = t(key);
+    });
+
+    const prof = $("profileOverlay")?.querySelector("h2");
+    if(prof) prof.textContent = t("profileTitle");
+    const themes = $("themesOverlay")?.querySelector("h2");
+    if(themes) themes.textContent = t("themesTitle");
+    const reward = $("dailyRewardText");
+    if(reward && !reward.dataset.locked) reward.textContent = t("dailyReward");
+
+    document.querySelectorAll(".language-option").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.lang === lang);
+    });
+  }
+
+  // Ayarlar açılırken dil seçeneklerini aktif göster.
+  const _openFinalSettingsLang = typeof openFinalSettings === "function" ? openFinalSettings : null;
+  openFinalSettings = function(){
+    if(_openFinalSettingsLang) _openFinalSettingsLang();
+    setTimeout(applyLanguage, 60);
+  };
+
+  setTimeout(() => {
+    document.querySelectorAll(".language-option").forEach(btn => {
+      btn.addEventListener("click", () => setLang(btn.dataset.lang));
+    });
+    applyLanguage();
+  }, 500);
+
+
   // Events
   setTimeout(() => {
     $("continueSaveBtn")?.addEventListener("click", continueSavedGameFinal);
