@@ -45,7 +45,7 @@
       <button id="profileBtn" class="menuBtn"><span>👤</span><b>PROFİL</b></button>
       <button id="themesBtn" class="menuBtn"><span>🎨</span><b>TEMALAR</b></button>
       <div class="version">
-        <div>v1.1 Multilang.2</div>
+        <div>v1.2 Settings.2</div>
         <div class="creator">By Deniel Demir Barut</div>
       </div>
     </div>
@@ -621,34 +621,99 @@
     </div>
   </div>
 
-  <div id="finalSettingsOverlay" class="profile-overlay hidden">
-    <div class="profile-card settings-final-card settings-premium-card">
-      <button id="closeFinalSettingsBtn" class="profile-close">×</button>
-      <div class="profile-small" data-i18n="settingsSmall">BARUTPOLY AYARLAR</div>
-      <h2 data-i18n="settingsTitle">Ayarlar</h2>
+  
+  <div id="finalSettingsOverlay" class="settings-tabs-overlay hidden">
+    <div class="settings-tabs-card">
+      <button id="closeFinalSettingsBtn" class="settings-close">×</button>
 
-      <div class="final-settings-list premium-settings-list">
-        <label>
-          <span data-i18n="sfx">🔊 Ses Efektleri</span>
-          <input id="settingSfx" type="checkbox" checked>
-        </label>
-        <label>
-          <span data-i18n="music">🎵 Arka Plan Müziği</span>
-          <input id="settingMusic" type="checkbox" checked>
-        </label>
-        <label>
-          <span data-i18n="animations">✨ Animasyonlar</span>
-          <input id="settingAnimations" type="checkbox" checked>
-        </label>
-        <label>
-          <span data-i18n="performance">⚡ Performans Modu</span>
-          <input id="settingPerf" type="checkbox">
-        </label>
+      <div id="settingsHomePage" class="settings-page active">
+        <div class="settings-small" data-i18n="settingsSmall">BARUTPOLY AYARLAR</div>
+        <h2 data-i18n="settingsTitle">Ayarlar</h2>
+
+        <div class="settings-category-grid">
+          <button id="openScreenSettingsBtn" class="settings-category-card">
+            <span>🖥️</span>
+            <b>Ekran Ayarları</b>
+            <small>Tam ekran, performans ve animasyonlar</small>
+          </button>
+          <button id="openSoundSettingsBtn" class="settings-category-card">
+            <span>🔊</span>
+            <b>Ses Ayarları</b>
+            <small>Müzik ve ses efektleri</small>
+          </button>
+          <button id="openLanguageSettingsBtn" class="settings-category-card">
+            <span>🌐</span>
+            <b>Dil Ayarları</b>
+            <small>Türkçe, English, Русский ve daha fazlası</small>
+          </button>
+        </div>
+
+        <div class="settings-footer">BarutPoly Family Edition • v1.2</div>
       </div>
 
-      <div class="language-section">
-        <div class="language-title" data-i18n="language">🌐 Dil</div>
-        <div id="languageGrid" class="language-grid">
+      <div id="screenSettingsPageFinal" class="settings-page">
+        <button class="settings-back" data-settings-back>← Geri</button>
+        <h2>🖥️ Ekran Ayarları</h2>
+
+        <div class="settings-row-list">
+          <div class="settings-row">
+            <div><b>Tam Ekran</b><small>Oyunu tam ekran yapar.</small></div>
+            <button id="fullscreenSettingsBtn" class="settings-action-btn">Tam Ekran</button>
+          </div>
+
+          <label class="settings-row">
+            <div><b>Performans Modu</b><small>Daha akıcı oyun için efektleri azaltır.</small></div>
+            <input id="settingPerf" type="checkbox" class="premium-toggle">
+          </label>
+
+          <label class="settings-row">
+            <div><b>Animasyonlar</b><small>Geçiş ve oyun içi animasyonlar.</small></div>
+            <input id="settingAnimations" type="checkbox" class="premium-toggle" checked>
+          </label>
+        </div>
+
+        <button id="saveScreenSettingsBtn" class="settings-save-btn">💾 Kaydet</button>
+      </div>
+
+      <div id="soundSettingsPageFinal" class="settings-page">
+        <button class="settings-back" data-settings-back>← Geri</button>
+        <h2>🔊 Ses Ayarları</h2>
+
+        <div class="settings-row-list">
+          <label class="settings-row">
+            <div><b>Müzik Aç/Kapat</b><small>Arka plan müziği.</small></div>
+            <input id="settingMusic" type="checkbox" class="premium-toggle" checked>
+          </label>
+
+          <div class="settings-row slider-row">
+            <div><b>Müzik Sesi</b><small id="musicVolumeLabel">50%</small></div>
+            <input id="settingMusicVolume" type="range" min="0" max="100" value="50">
+          </div>
+
+          <label class="settings-row">
+            <div><b>Ses Efektleri</b><small>Zar, kart, para ve tıklama sesleri.</small></div>
+            <input id="settingSfx" type="checkbox" class="premium-toggle" checked>
+          </label>
+
+          <div class="settings-row slider-row">
+            <div><b>Efekt Sesi</b><small id="sfxVolumeLabel">75%</small></div>
+            <input id="settingSfxVolume" type="range" min="0" max="100" value="75">
+          </div>
+
+          <label class="settings-row">
+            <div><b>Animasyon Sesleri</b><small>Hareket ve özel efekt sesleri.</small></div>
+            <input id="settingAnimSfx" type="checkbox" class="premium-toggle" checked>
+          </label>
+        </div>
+
+        <button id="saveSoundSettingsBtn" class="settings-save-btn">💾 Kaydet</button>
+      </div>
+
+      <div id="languageSettingsPageFinal" class="settings-page">
+        <button class="settings-back" data-settings-back>← Geri</button>
+        <h2>🌐 Dil Ayarları</h2>
+
+        <div id="languageGrid" class="language-grid settings-language-grid">
           <button class="language-option" data-lang="tr">🇹🇷 <b>Türkçe</b></button>
           <button class="language-option" data-lang="en">🇬🇧 <b>English</b></button>
           <button class="language-option" data-lang="ru">🇷🇺 <b>Русский</b></button>
@@ -658,10 +723,9 @@
           <button class="language-option" data-lang="it">🇮🇹 <b>Italiano</b></button>
           <button class="language-option" data-lang="ar">🇸🇦 <b>العربية</b></button>
         </div>
-      </div>
 
-      <button id="saveFinalSettingsBtn" class="trade-confirm" data-i18n="saveSettings">Ayarları Kaydet</button>
-      <div class="settings-footer">BarutPoly Family Edition • v1.1</div>
+        <button id="saveLanguageSettingsBtn" class="settings-save-btn">💾 Kaydet</button>
+      </div>
     </div>
   </div>
 <div id="onlineSyncPill" class="online-sync-pill hidden">🌐 Online</div>

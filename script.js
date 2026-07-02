@@ -7279,6 +7279,130 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 500);
 
 
+
+  /* ===== V54 PREMIUM SETTINGS TABS ===== */
+
+  const BP_PREMIUM_SETTINGS_KEY = "barutpolyPremiumSettingsV54";
+  const bpPremiumSettings = JSON.parse(localStorage.getItem(BP_PREMIUM_SETTINGS_KEY) || '{"sfx":true,"music":true,"animations":true,"perf":false,"animSfx":true,"musicVolume":50,"sfxVolume":75}');
+
+  function savePremiumSettings(){
+    bpPremiumSettings.sfx = !!$("settingSfx")?.checked;
+    bpPremiumSettings.music = !!$("settingMusic")?.checked;
+    bpPremiumSettings.animations = !!$("settingAnimations")?.checked;
+    bpPremiumSettings.perf = !!$("settingPerf")?.checked;
+    bpPremiumSettings.animSfx = !!$("settingAnimSfx")?.checked;
+    bpPremiumSettings.musicVolume = Number($("settingMusicVolume")?.value || 50);
+    bpPremiumSettings.sfxVolume = Number($("settingSfxVolume")?.value || 75);
+    localStorage.setItem(BP_PREMIUM_SETTINGS_KEY, JSON.stringify(bpPremiumSettings));
+    applyPremiumSettings();
+    showFinalToast?.("Ayarlar kaydedildi.", "ok");
+  }
+
+  function applyPremiumSettings(){
+    document.body.classList.toggle("no-animations", !bpPremiumSettings.animations);
+    document.body.classList.toggle("performance-mode", !!bpPremiumSettings.perf);
+
+    const musicVol = Math.max(0, Math.min(100, bpPremiumSettings.musicVolume)) / 100;
+    const sfxVol = Math.max(0, Math.min(100, bpPremiumSettings.sfxVolume)) / 100;
+
+    try{
+      Object.values(sfx || {}).forEach(a => {
+        if(!a) return;
+        a.muted = !bpPremiumSettings.sfx;
+        a.volume = sfxVol * (a === sfx.step ? 0.45 : 0.75);
+      });
+    }catch(e){}
+
+    try{
+      const musicAudio = $("musicAudio");
+      if(musicAudio){
+        musicAudio.muted = !bpPremiumSettings.music;
+        musicAudio.volume = musicVol * 0.45;
+      }
+    }catch(e){}
+
+    if($("musicVolumeLabel")) $("musicVolumeLabel").textContent = `${bpPremiumSettings.musicVolume}%`;
+    if($("sfxVolumeLabel")) $("sfxVolumeLabel").textContent = `${bpPremiumSettings.sfxVolume}%`;
+  }
+
+  function syncPremiumSettingsUI(){
+    if($("settingSfx")) $("settingSfx").checked = !!bpPremiumSettings.sfx;
+    if($("settingMusic")) $("settingMusic").checked = !!bpPremiumSettings.music;
+    if($("settingAnimations")) $("settingAnimations").checked = !!bpPremiumSettings.animations;
+    if($("settingPerf")) $("settingPerf").checked = !!bpPremiumSettings.perf;
+    if($("settingAnimSfx")) $("settingAnimSfx").checked = !!bpPremiumSettings.animSfx;
+    if($("settingMusicVolume")) $("settingMusicVolume").value = bpPremiumSettings.musicVolume;
+    if($("settingSfxVolume")) $("settingSfxVolume").value = bpPremiumSettings.sfxVolume;
+    applyPremiumSettings();
+  }
+
+  function showSettingsTab(pageId){
+    ["settingsHomePage","screenSettingsPageFinal","soundSettingsPageFinal","languageSettingsPageFinal"].forEach(id => {
+      $(id)?.classList.toggle("active", id === pageId);
+    });
+  }
+
+  openFinalSettings = function(){
+    const overlay = $("finalSettingsOverlay");
+    if(!overlay) return;
+    syncPremiumSettingsUI();
+    showSettingsTab("settingsHomePage");
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  };
+
+  closeFinalSettings = function(){
+    const overlay = $("finalSettingsOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  };
+
+  openSettings = openFinalSettings;
+
+  function toggleFullScreenFromSettings(){
+    try{
+      if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen?.();
+      }else{
+        document.exitFullscreen?.();
+      }
+      showFinalToast?.("Tam ekran değiştirildi.", "ok");
+    }catch(e){
+      showFinalToast?.("Tam ekran desteklenmedi.", "warn");
+    }
+  }
+
+  setTimeout(() => {
+    $("openScreenSettingsBtn")?.addEventListener("click", () => showSettingsTab("screenSettingsPageFinal"));
+    $("openSoundSettingsBtn")?.addEventListener("click", () => showSettingsTab("soundSettingsPageFinal"));
+    $("openLanguageSettingsBtn")?.addEventListener("click", () => showSettingsTab("languageSettingsPageFinal"));
+    document.querySelectorAll("[data-settings-back]").forEach(btn => btn.addEventListener("click", () => showSettingsTab("settingsHomePage")));
+
+    $("fullscreenSettingsBtn")?.addEventListener("click", toggleFullScreenFromSettings);
+    $("saveScreenSettingsBtn")?.addEventListener("click", savePremiumSettings);
+    $("saveSoundSettingsBtn")?.addEventListener("click", savePremiumSettings);
+    $("saveLanguageSettingsBtn")?.addEventListener("click", () => showFinalToast?.("Dil ayarları kaydedildi.", "ok"));
+
+    $("settingMusicVolume")?.addEventListener("input", () => {
+      bpPremiumSettings.musicVolume = Number($("settingMusicVolume").value || 50);
+      applyPremiumSettings();
+    });
+
+    $("settingSfxVolume")?.addEventListener("input", () => {
+      bpPremiumSettings.sfxVolume = Number($("settingSfxVolume").value || 75);
+      applyPremiumSettings();
+    });
+
+    $("closeFinalSettingsBtn")?.addEventListener("click", closeFinalSettings);
+    $("finalSettingsOverlay")?.addEventListener("click", (e) => { if(e.target === $("finalSettingsOverlay")) closeFinalSettings(); });
+
+    applyPremiumSettings();
+  }, 500);
+
+
   // Events
   setTimeout(() => {
     $("continueSaveBtn")?.addEventListener("click", continueSavedGameFinal);
