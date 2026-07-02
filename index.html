@@ -44,7 +44,7 @@
       <button id="profileBtn" class="menuBtn"><span>👤</span><b>PROFİL</b></button>
       <button id="themesBtn" class="menuBtn"><span>🎨</span><b>TEMALAR</b></button>
       <div class="version">
-        <div>v0.47.1</div>
+        <div>v0.47.2.2</div>
         <div class="creator">By Deniel Demir Barut</div>
       </div>
     </div>
@@ -580,6 +580,46 @@
   </div>
 
 
+
+  <div id="profileOverlay" class="profile-overlay hidden">
+    <div class="profile-card profile-only-card">
+      <button id="closeProfileBtn" class="profile-close">×</button>
+      <div class="profile-small">BARUTPOLY PROFİL</div>
+      <h2>Profil</h2>
+
+      <div class="profile-clean-layout">
+        <div class="profile-box">
+          <label>Oyuncu Adın</label>
+          <input id="profileNameInput" type="text" maxlength="24" placeholder="Adını yaz">
+          <button id="saveProfileBtn">Kaydet</button>
+        </div>
+
+        <div class="profile-box">
+          <div class="profile-stat-title">İstatistikler</div>
+          <div id="profileStats" class="profile-stats"></div>
+        </div>
+
+        <div class="reward-box profile-reward">
+          <div>
+            <b>🎁 Günlük Ödül</b>
+            <span id="dailyRewardText">Bugünkü ödülünü al.</span>
+          </div>
+          <button id="claimDailyRewardBtn">Ödülü Al</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="themesOverlay" class="profile-overlay hidden">
+    <div class="profile-card themes-only-card">
+      <button id="closeThemesBtn" class="profile-close">×</button>
+      <div class="profile-small">BARUTPOLY TEMA MAĞAZASI</div>
+      <h2>Temalar</h2>
+      <p class="theme-page-desc">Bir tema seç. Menü, tahta, paneller, butonlar ve ışıklar değişir.</p>
+      <div id="themeGrid" class="theme-grid theme-grid-large"></div>
+    </div>
+  </div>
+
   <div id="onlineSyncPill" class="online-sync-pill hidden">🌐 Online</div>
 
   <div id="finalToastHolder" class="final-toast-holder"></div>
@@ -591,50 +631,6 @@
     </div>
   </div>
 
-  <div id="profileOverlay" class="profile-overlay hidden">
-    <div class="profile-card">
-      <button id="closeProfileBtn" class="profile-close">×</button>
-      <div class="profile-small">BARUTPOLY PROFİL</div>
-      <h2>Profil & Temalar</h2>
-
-      <div class="profile-grid">
-        <div class="profile-box">
-          <label>Oyuncu Adın</label>
-          <input id="profileNameInput" type="text" maxlength="24" placeholder="Adını yaz">
-          <button id="saveProfileBtn">Kaydet</button>
-        </div>
-
-        <div class="profile-box">
-          <div class="profile-stat-title">İstatistikler</div>
-          <div id="profileStats" class="profile-stats"></div>
-        </div>
-      </div>
-
-      <div class="theme-section">
-        <div class="profile-stat-title">Tema Mağazası</div>
-        <div id="themeGrid" class="theme-grid"></div>
-      </div>
-
-      <div class="reward-box">
-        <div>
-          <b>🎁 Günlük Ödül</b>
-          <span id="dailyRewardText">Bugünkü ödülünü al.</span>
-        </div>
-        <button id="claimDailyRewardBtn">Ödülü Al</button>
-      </div>
-    </div>
-  </div>
-
-
-  <div id="themesOverlay" class="profile-overlay hidden">
-    <div class="profile-card themes-only-card">
-      <button id="closeThemesBtn" class="profile-close">×</button>
-      <div class="profile-small">BARUTPOLY TEMA MAĞAZASI</div>
-      <h2>Temalar</h2>
-      <p class="theme-page-desc">Bir tema seçtiğinde menü, tahta, paneller ve buton renkleri değişir.</p>
-      <div id="themeGrid" class="theme-grid theme-grid-large"></div>
-    </div>
-  </div>
 
 </body>
 </html>

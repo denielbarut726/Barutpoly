@@ -6626,6 +6626,145 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V47.2 FINAL PROFILE + THEME FIX ===== */
+
+  const V472_THEME_LIST = [
+    {id:"classic", name:"Klasik", icon:"👑", desc:"Mor + altın orijinal"},
+    {id:"night", name:"Neon Gece", icon:"🌙", desc:"Mavi neon karanlık"},
+    {id:"royal", name:"Kraliyet", icon:"🏆", desc:"Altın premium"},
+    {id:"sea", name:"Boğaz", icon:"🌉", desc:"İstanbul mavi"},
+    {id:"emerald", name:"Zümrüt", icon:"🌲", desc:"Yeşil lüks"},
+    {id:"volcano", name:"Volkan", icon:"🔥", desc:"Kırmızı ateş"}
+  ];
+
+  function forceProfileOnly(){
+    const profile = $("profileOverlay");
+    if(!profile) return;
+    profile.querySelectorAll(".theme-section, #themeGrid, .theme-page-desc").forEach(el => {
+      const parentCard = el.closest(".profile-card");
+      if(parentCard && parentCard.classList.contains("profile-only-card")){
+        el.remove();
+      }
+    });
+    const h2 = profile.querySelector("h2");
+    if(h2) h2.textContent = "Profil";
+  }
+
+  function setThemeHard(themeId){
+    const normalized = {
+      dark:"night",
+      gold:"royal",
+      istanbul:"sea",
+      forest:"emerald",
+      fire:"volcano"
+    }[themeId] || themeId || "classic";
+
+    profileState.theme = normalized;
+    localStorage.setItem("barutpolyTheme", normalized);
+    try{ saveProfileState?.(); }catch(e){}
+
+    document.body.dataset.theme = normalized;
+    document.documentElement.dataset.theme = normalized;
+
+    showFinalToast?.(`${(V472_THEME_LIST.find(t=>t.id===normalized)||{}).name || "Tema"} aktif.`, "ok");
+  }
+
+  applyTheme = function(themeId=profileState.theme){
+    setThemeHard(themeId);
+  };
+
+  renderThemeGrid = function(){
+    const grid = $("themeGrid");
+    if(!grid) return;
+    grid.innerHTML = "";
+
+    V472_THEME_LIST.forEach(t => {
+      const active = (document.body.dataset.theme || profileState.theme || "classic") === t.id;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `theme-card theme-${t.id} ${active ? "active" : ""}`;
+      card.innerHTML = `
+        <div class="theme-preview ${t.id}">
+          <i></i><i></i><i></i>
+        </div>
+        <span>${t.icon}</span>
+        <b>${t.name}</b>
+        <small>${t.desc}</small>
+        <em>${active ? "AKTİF" : "SEÇ"}</em>
+      `;
+      card.addEventListener("click", () => {
+        setThemeHard(t.id);
+        renderThemeGrid();
+        playSound("click");
+      });
+      grid.appendChild(card);
+    });
+  };
+
+  openProfileOverlay = function(){
+    forceProfileOnly();
+    const overlay = $("profileOverlay");
+    if(!overlay) return;
+    if($("profileNameInput")) $("profileNameInput").value = profileState.name || "";
+    renderProfileStats?.();
+    updateDailyRewardUI?.();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  };
+
+  function closeProfileOverlayFinal(){
+    const overlay = $("profileOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  function openThemesOverlayFinal(){
+    const overlay = $("themesOverlay");
+    if(!overlay) return;
+    renderThemeGrid();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeThemesOverlayFinal(){
+    const overlay = $("themesOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  // Eventleri direkt bağla, eski bozuk bağlar varsa üstüne yazar.
+  setTimeout(() => {
+    forceProfileOnly();
+    setThemeHard(localStorage.getItem("barutpolyTheme") || profileState.theme || "classic");
+
+    const profileBtn = $("profileBtn");
+    const themesBtn = $("themesBtn");
+    const closeProfile = $("closeProfileBtn");
+    const closeThemes = $("closeThemesBtn");
+    const profileOverlay = $("profileOverlay");
+    const themesOverlay = $("themesOverlay");
+
+    if(profileBtn) profileBtn.onclick = openProfileOverlay;
+    if(themesBtn) themesBtn.onclick = openThemesOverlayFinal;
+    if(closeProfile) closeProfile.onclick = closeProfileOverlayFinal;
+    if(closeThemes) closeThemes.onclick = closeThemesOverlayFinal;
+
+    if(profileOverlay){
+      profileOverlay.onclick = (e) => { if(e.target === profileOverlay) closeProfileOverlayFinal(); };
+    }
+    if(themesOverlay){
+      themesOverlay.onclick = (e) => { if(e.target === themesOverlay) closeThemesOverlayFinal(); };
+    }
+  }, 350);
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
