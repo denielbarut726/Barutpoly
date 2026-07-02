@@ -5838,6 +5838,222 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V45 FINAL RELEASE CANDIDATE =====
+     Final polish + güvenlik + performans:
+     - global toast
+     - final loading overlay
+     - online throttled save
+     - confetti winner
+     - mobile fullscreen helper
+     - safe refresh ownership
+     - better error recovery
+  */
+
+  const BARUTPOLY_VERSION = "V45 RC";
+  let finalSaveTimer = null;
+  let lastFinalSavePayload = null;
+
+  function showFinalToast(text, type="info", ms=2600){
+    const holder = $("finalToastHolder");
+    if(!holder) return;
+
+    const toast = document.createElement("div");
+    toast.className = `final-toast ${type}`;
+    toast.textContent = text;
+    holder.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 260);
+    }, ms);
+  }
+
+  function showFinalLoading(text="Yükleniyor..."){
+    const overlay = $("finalLoadingOverlay");
+    if(!overlay) return;
+    if($("finalLoadingText")) $("finalLoadingText").textContent = text;
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function hideFinalLoading(){
+    const overlay = $("finalLoadingOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+  }
+
+  function requestMobileFullscreen(){
+    // Mobilde ilk dokunuşta daha iyi ekran alanı.
+    try{
+      if(window.innerWidth < 900 && !document.fullscreenElement){
+        document.documentElement.requestFullscreen?.().catch?.(() => {});
+      }
+    }catch(e){}
+  }
+
+  document.addEventListener("click", requestMobileFullscreen, {once:true});
+
+  // Online save'leri çakışmasın diye hafif throttle.
+  const _saveOnlineFullStateV45 = saveOnlineFullState;
+  saveOnlineFullState = async function(reason="Güncellendi", extra={}){
+    if(!isOnlineGame){
+      return _saveOnlineFullStateV45(reason, extra);
+    }
+
+    lastFinalSavePayload = {reason, extra};
+
+    if(finalSaveTimer){
+      clearTimeout(finalSaveTimer);
+    }
+
+    return new Promise((resolve) => {
+      finalSaveTimer = setTimeout(async () => {
+        const payload = lastFinalSavePayload || {reason, extra};
+        finalSaveTimer = null;
+
+        try{
+          await _saveOnlineFullStateV45(payload.reason, payload.extra);
+          resolve();
+        }catch(err){
+          console.error("V45 save hata:", err);
+          showFinalToast("Senkron hatası, tekrar deneniyor.", "warn");
+          resolve();
+        }
+      }, 220);
+    });
+  };
+
+  // Online oyun açılışında loading.
+  const _startOnlineGameFromRoomV45 = startOnlineGameFromRoom;
+  startOnlineGameFromRoom = async function(data){
+    showFinalLoading("Online oyun hazırlanıyor...");
+    try{
+      await _startOnlineGameFromRoomV45(data);
+      showFinalToast("Online oyun başladı.", "ok");
+    }finally{
+      setTimeout(hideFinalLoading, 450);
+    }
+  };
+
+  // Tahta sahiplikleri bazen geç basıyorsa güvenli yenile.
+  function safeFullRefresh(){
+    try{
+      forceBuildBoardForOnline?.();
+      refreshTileOwnership?.();
+      renderPlayers?.();
+      updatePanel?.();
+      renderLeftPlayerPanel?.();
+      updateTokens?.();
+      setActiveToken?.();
+    }catch(err){
+      console.warn("safeFullRefresh hata:", err);
+    }
+  }
+
+  const _applyOnlineGameStateV45 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    _applyOnlineGameStateV45(data);
+    setTimeout(safeFullRefresh, 80);
+
+    if(data?.message){
+      showOnlineSyncPill?.("🌐 " + data.message, "ok");
+    }
+  };
+
+  // Kazanan ekranına konfeti.
+  function spawnFinalConfetti(){
+    const holder = document.createElement("div");
+    holder.className = "final-confetti-holder";
+    document.body.appendChild(holder);
+
+    const emojis = ["🎉","✨","🏆","💰","👑","🎊"];
+    for(let i=0;i<42;i++){
+      const c = document.createElement("span");
+      c.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      c.style.left = Math.random()*100 + "vw";
+      c.style.animationDelay = (Math.random()*0.9) + "s";
+      c.style.animationDuration = (1.8 + Math.random()*1.8) + "s";
+      holder.appendChild(c);
+    }
+
+    setTimeout(() => holder.remove(), 4200);
+  }
+
+  const _showOnlineWinnerV45 = showOnlineWinner;
+  showOnlineWinner = function(winner){
+    _showOnlineWinnerV45(winner);
+    spawnFinalConfetti();
+    playSound("win");
+    showFinalToast(`${winner?.name || "Oyuncu"} kazandı!`, "ok", 4200);
+  };
+
+  // Klasik kazanan ekranı varsa ona da konfeti bağla.
+  if(typeof showWinnerScreen === "function"){
+    const _showWinnerScreenV45 = showWinnerScreen;
+    showWinnerScreen = function(...args){
+      _showWinnerScreenV45(...args);
+      spawnFinalConfetti();
+    };
+  }
+
+  // Oyundan çıkarken online ise odadan ayrıldı yaz.
+  const _resetClassicGameAndGoMenuV45 = resetClassicGameAndGoMenu;
+  resetClassicGameAndGoMenu = function(){
+    try{
+      if(isOnlineGame){
+        markOnlineLeft?.();
+        if(onlineGameUnsubscribe){
+          onlineGameUnsubscribe();
+          onlineGameUnsubscribe = null;
+        }
+        isOnlineGame = false;
+        onlineGameRoomCode = null;
+      }
+    }catch(e){}
+    _resetClassicGameAndGoMenuV45();
+    showFinalToast("Ana menüye dönüldü.", "info");
+  };
+
+  // Kritik butonlara küçük titreşim/feedback.
+  function finalButtonFeedback(btn){
+    if(!btn) return;
+    btn.classList.remove("final-tap");
+    void btn.offsetWidth;
+    btn.classList.add("final-tap");
+  }
+
+  ["rollDiceBtn","endTurnBtn","buyBtn","drawChanceBtn","onlineStartGameBtn","continueGameBtn"].forEach(id => {
+    document.addEventListener("click", (e) => {
+      if(e.target?.id === id || e.target?.closest?.("#"+id)){
+        finalButtonFeedback($(id));
+      }
+    });
+  });
+
+  // Firebase offline/online browser durumu.
+  window.addEventListener("online", () => {
+    showFinalToast("Bağlantı geri geldi.", "ok");
+    if(isOnlineGame && onlineGameRoomCode){
+      listenOnlineGameState?.(onlineGameRoomCode);
+      saveOnlineFullState?.("Bağlantı yenilendi.");
+    }
+  });
+
+  window.addEventListener("offline", () => {
+    showFinalToast("İnternet bağlantısı koptu.", "warn", 4000);
+    showOnlineSyncPill?.("⚠️ Offline", "warn");
+  });
+
+  // Menüye versiyon aktivitesi
+  setTimeout(() => {
+    console.log("BarutPoly", BARUTPOLY_VERSION, "ready");
+  }, 500);
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
