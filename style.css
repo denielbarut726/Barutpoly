@@ -6675,3 +6675,76 @@ body[data-theme="fire"] #gameBgVideo,body[data-theme="fire"] #bgVideo{filter:bri
   .profile-grid.single{grid-template-columns:1fr}
   .theme-grid-large{grid-template-columns:repeat(2,1fr) !important}
 }
+
+
+/* ===== V47.1 THEME BUTTON + CHAT POSITION HOTFIX ===== */
+
+#themesBtn{
+  border-color:rgba(246,196,83,.42) !important;
+}
+
+#themesBtn span{
+  background:rgba(246,196,83,.20) !important;
+}
+
+.themes-only-card{
+  width:min(920px,94vw) !important;
+}
+
+.theme-page-desc{
+  color:#cbd5e1;
+  text-align:center;
+  font-weight:800;
+  margin:-8px 0 18px;
+}
+
+.theme-grid-large{
+  grid-template-columns:repeat(3,1fr) !important;
+}
+
+.theme-card{
+  min-height:138px !important;
+}
+
+/* Sohbet tam olarak oyuncu alanının üstünde */
+.chat-panel{
+  position:absolute !important;
+  z-index:8 !important;
+  max-height:220px !important;
+}
+
+.chat-messages{
+  height:128px !important;
+  max-height:128px !important;
+}
+
+.chat-input-row{
+  margin-top:8px !important;
+}
+
+/* Canlı aktivite sohbetin üstünü kapatmasın */
+.activity-panel{
+  max-height:138px !important;
+}
+
+.activity-feed{
+  max-height:86px !important;
+  overflow-y:auto !important;
+}
+
+@media (max-height: 820px) and (min-width:951px){
+  .chat-panel{
+    max-height:190px !important;
+  }
+
+  .chat-messages{
+    height:98px !important;
+    max-height:98px !important;
+  }
+}
+
+@media (hover:none) and (pointer:coarse){
+  .theme-grid-large{
+    grid-template-columns:repeat(2,1fr) !important;
+  }
+}

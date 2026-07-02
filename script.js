@@ -6494,6 +6494,138 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 300);
 
 
+
+  /* ===== V47.1 THEME BUTTON + CHAT POSITION HOTFIX ===== */
+
+  function openThemesOverlayFixed(){
+    let overlay = $("themesOverlay");
+
+    if(!overlay){
+      overlay = document.createElement("div");
+      overlay.id = "themesOverlay";
+      overlay.className = "profile-overlay hidden";
+      overlay.innerHTML = `
+        <div class="profile-card themes-only-card">
+          <button id="closeThemesBtn" class="profile-close">×</button>
+          <div class="profile-small">BARUTPOLY TEMA MAĞAZASI</div>
+          <h2>Temalar</h2>
+          <p class="theme-page-desc">Bir tema seçtiğinde menü, tahta, paneller ve buton renkleri değişir.</p>
+          <div id="themeGrid" class="theme-grid theme-grid-large"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      $("closeThemesBtn")?.addEventListener("click", closeThemesOverlayFixed);
+      overlay.addEventListener("click", (e) => { if(e.target === overlay) closeThemesOverlayFixed(); });
+    }
+
+    renderThemeGridFixed();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeThemesOverlayFixed(){
+    const overlay = $("themesOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  function renderThemeGridFixed(){
+    const grid = $("themeGrid");
+    if(!grid) return;
+
+    const themeList = typeof V46_THEMES !== "undefined" ? V46_THEMES : [
+      {id:"classic", name:"Klasik", icon:"👑", desc:"Orijinal"},
+      {id:"dark", name:"Gece", icon:"🌙", desc:"Koyu neon"},
+      {id:"gold", name:"Altın", icon:"🏆", desc:"Premium"},
+      {id:"istanbul", name:"İstanbul", icon:"🌉", desc:"Mavi şehir"},
+      {id:"forest", name:"Orman", icon:"🌲", desc:"Yeşil"},
+      {id:"fire", name:"Alev", icon:"🔥", desc:"Kırmızı"}
+    ];
+
+    grid.innerHTML = "";
+
+    themeList.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = `theme-card theme-${t.id} ${document.body.dataset.theme === t.id ? "active" : ""}`;
+      btn.innerHTML = `
+        <span>${t.icon}</span>
+        <b>${t.name}</b>
+        <small>${t.desc}</small>
+        <em>${document.body.dataset.theme === t.id ? "AKTİF" : "SEÇ"}</em>
+      `;
+
+      btn.addEventListener("click", () => {
+        try{
+          profileState.theme = t.id;
+          localStorage.setItem("barutpolyTheme", t.id);
+          saveProfileState?.();
+        }catch(e){}
+
+        document.body.dataset.theme = t.id;
+        document.documentElement.dataset.theme = t.id;
+
+        if(typeof applyTheme === "function"){
+          try{ applyTheme(t.id); }catch(e){}
+        }
+
+        renderThemeGridFixed();
+        showFinalToast?.(`${t.name} teması aktif.`, "ok");
+        playSound("click");
+      });
+
+      grid.appendChild(btn);
+    });
+  }
+
+  function positionChatExactlyAbovePlayerArea(){
+    const chat = $("chatPanel");
+    const left = $("leftPlayerPanel");
+    if(!chat || !left) return;
+
+    if(window.innerWidth <= 950){
+      return;
+    }
+
+    const gap = 12;
+    const targetHeight = 220;
+    const leftTop = left.offsetTop;
+    const chatTop = Math.max(16, leftTop - targetHeight - gap);
+
+    chat.style.left = left.offsetLeft + "px";
+    chat.style.width = left.offsetWidth + "px";
+    chat.style.top = chatTop + "px";
+    chat.style.maxHeight = targetHeight + "px";
+
+    const messages = $("chatMessages");
+    if(messages){
+      messages.style.height = "128px";
+      messages.style.maxHeight = "128px";
+    }
+  }
+
+  // Eski hizalamayı override et
+  adjustChatPanelLayout = positionChatExactlyAbovePlayerArea;
+
+  setTimeout(() => {
+    $("themesBtn")?.addEventListener("click", openThemesOverlayFixed);
+    $("closeThemesBtn")?.addEventListener("click", closeThemesOverlayFixed);
+    $("themesOverlay")?.addEventListener("click", (e) => { if(e.target === $("themesOverlay")) closeThemesOverlayFixed(); });
+    positionChatExactlyAbovePlayerArea();
+  }, 400);
+
+  window.addEventListener("resize", () => setTimeout(positionChatExactlyAbovePlayerArea, 120));
+
+  const _showScreenV471 = showScreen;
+  showScreen = function(name){
+    _showScreenV471(name);
+    setTimeout(positionChatExactlyAbovePlayerArea, 120);
+    setTimeout(positionChatExactlyAbovePlayerArea, 500);
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
