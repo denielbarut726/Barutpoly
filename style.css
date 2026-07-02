@@ -5643,3 +5643,53 @@ html, body{
   .dice-face .bl{left:6px !important;bottom:6px !important}
   .dice-face .br{right:6px !important;bottom:6px !important}
 }
+
+
+/* ===== V39.3 CORNER TEXT FIX ===== */
+/* Otopark ve Hapis Ziyareti yazıları alta kaymasın diye köşe kareleri dengelendi. */
+
+.tile.corner{
+  justify-content:center !important;
+  gap:2px !important;
+  padding:4px !important;
+}
+
+.tile.corner .tile-icon{
+  margin:0 !important;
+  line-height:1 !important;
+  max-height:38px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+.tile.corner .tile-name{
+  margin-top:1px !important;
+  max-height:28px !important;
+  line-height:.95 !important;
+  font-size:11px !important;
+  display:block !important;
+  transform:translateY(-2px);
+  letter-spacing:-.25px !important;
+}
+
+/* Mobilde köşe yazıları daha da kompakt */
+@media (hover:none) and (pointer:coarse){
+  .tile.corner{
+    gap:0 !important;
+    padding:1px !important;
+  }
+
+  .tile.corner .tile-icon{
+    font-size:14px !important;
+    max-height:16px !important;
+  }
+
+  .tile.corner .tile-name{
+    font-size:4.2px !important;
+    line-height:.82 !important;
+    max-height:10px !important;
+    transform:translateY(-1px) !important;
+    letter-spacing:-.2px !important;
+  }
+}
