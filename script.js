@@ -5533,6 +5533,311 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V43 + V44 STABILITY + POLISH =====
+     - reconnect / heartbeat
+     - disconnected player label
+     - host leave fallback
+     - action lock
+     - sync indicator
+     - smoother visual feedback
+  */
+
+  let onlineHeartbeatTimer = null;
+  let onlineReconnectTimer = null;
+  let onlineActionLockUntil = 0;
+  let onlineLastRoomSnapshot = null;
+
+  function showOnlineSyncPill(text="🌐 Online", mode="ok"){
+    const pill = $("onlineSyncPill");
+    if(!pill) return;
+    pill.textContent = text;
+    pill.className = `online-sync-pill ${mode}`;
+    pill.classList.remove("hidden");
+  }
+
+  function hideOnlineSyncPill(){
+    $("onlineSyncPill")?.classList.add("hidden");
+  }
+
+  function setOnlineBusyLock(ms=1200){
+    onlineActionLockUntil = Date.now() + ms;
+    document.body.classList.add("online-action-busy");
+    setTimeout(() => {
+      if(Date.now() >= onlineActionLockUntil){
+        document.body.classList.remove("online-action-busy");
+      }
+    }, ms + 40);
+  }
+
+  function onlineIsBusyLocked(){
+    return Date.now() < onlineActionLockUntil;
+  }
+
+  async function updateOnlineHeartbeat(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+
+    try{
+      await playersRef(onlineCurrentRoomCode).doc(onlinePlayerId).set({
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        connected: true
+      }, {merge:true});
+    }catch(err){
+      console.warn("heartbeat hata", err);
+      showOnlineSyncPill("⚠️ Bağlantı zayıf", "warn");
+    }
+  }
+
+  function startOnlineHeartbeat(){
+    stopOnlineHeartbeat();
+    updateOnlineHeartbeat();
+    onlineHeartbeatTimer = setInterval(updateOnlineHeartbeat, 12000);
+  }
+
+  function stopOnlineHeartbeat(){
+    if(onlineHeartbeatTimer){
+      clearInterval(onlineHeartbeatTimer);
+      onlineHeartbeatTimer = null;
+    }
+  }
+
+  async function markOnlineLeft(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+    try{
+      await playersRef(onlineCurrentRoomCode).doc(onlinePlayerId).set({
+        connected: false,
+        leftAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+    }catch(e){}
+  }
+
+  window.addEventListener("beforeunload", () => {
+    try{ markOnlineLeft(); }catch(e){}
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "visible"){
+      updateOnlineHeartbeat();
+      if(isOnlineGame && onlineGameRoomCode){
+        listenOnlineGameState(onlineGameRoomCode);
+        showOnlineSyncPill("🔄 Yeniden bağlandı", "ok");
+        setTimeout(() => showOnlineSyncPill("🌐 Online", "ok"), 1400);
+      }
+    }
+  });
+
+  function playerLooksDisconnected(p){
+    // Firestore Timestamp compatible
+    if(p.connected === false) return true;
+    if(!p.lastSeen || !p.lastSeen.toDate) return false;
+    return Date.now() - p.lastSeen.toDate().getTime() > 35000;
+  }
+
+  function chooseNewHostIfNeeded(roomPlayers){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+    if(!Array.isArray(roomPlayers) || !roomPlayers.length) return;
+
+    const currentHost = roomPlayers.find(p => p.host);
+    const hostDead = currentHost && playerLooksDisconnected(currentHost);
+
+    if(currentHost && !hostDead) return;
+
+    const alive = roomPlayers.find(p => !playerLooksDisconnected(p)) || roomPlayers[0];
+    if(!alive) return;
+
+    // Sadece yeni host adayı kendi cihazında hostluğu üstlensin.
+    if(alive.id === onlinePlayerId){
+      playersRef(onlineCurrentRoomCode).doc(onlinePlayerId).set({host:true}, {merge:true});
+      roomRef(onlineCurrentRoomCode).set({
+        hostId: onlinePlayerId,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+      setOnlineHostHint?.("Host ayrıldı, yeni host sensin.", "ok");
+    }
+  }
+
+  const _listenOnlineRoomV4344 = listenOnlineRoom;
+  listenOnlineRoom = function(code){
+    _listenOnlineRoomV4344(code);
+    onlineCurrentRoomCode = code;
+    startOnlineHeartbeat();
+    showOnlineSyncPill("🌐 Lobby bağlı", "ok");
+  };
+
+  const _renderFirebaseLobbyPlayersV4344 = renderFirebaseLobbyPlayers;
+  renderFirebaseLobbyPlayers = function(roomPlayers){
+    chooseNewHostIfNeeded(roomPlayers);
+    _renderFirebaseLobbyPlayersV4344(roomPlayers);
+
+    document.querySelectorAll("#lobbyPlayers .lobby-player").forEach((el, index) => {
+      const p = roomPlayers[index];
+      if(!p) return;
+      if(playerLooksDisconnected(p)){
+        el.classList.add("disconnected");
+        const strong = el.querySelector("strong");
+        if(strong) strong.textContent = "Koptu";
+      }
+    });
+  };
+
+  const _setOnlineControlsV4344 = setOnlineControls;
+  setOnlineControls = function(){
+    _setOnlineControlsV4344();
+    if(!isOnlineGame) return;
+
+    const locked = onlineIsBusyLocked();
+    ["rollDiceBtn","endTurnBtn","buyBtn","drawChanceBtn","payRentBtn","stayJailBtn","payBailBtn","buildHouseBtn","buildHotelBtn"].forEach(id => {
+      const btn = $(id);
+      if(btn && locked){
+        btn.disabled = true;
+      }
+    });
+
+    showOnlineSyncPill(isMyOnlineTurn() ? "✅ Sıra sende" : "⏳ Rakip sırası", isMyOnlineTurn() ? "ok" : "wait");
+  };
+
+  async function safeOnlineAction(label, fn){
+    if(onlineIsBusyLocked()){
+      playSound("fail");
+      return;
+    }
+
+    setOnlineBusyLock(1500);
+    showOnlineSyncPill("🔄 Senkronlanıyor...", "wait");
+
+    try{
+      await fn();
+      showOnlineSyncPill("✅ Kaydedildi", "ok");
+      setTimeout(() => {
+        if(isOnlineGame) showOnlineSyncPill(isMyOnlineTurn() ? "✅ Sıra sende" : "⏳ Rakip sırası", isMyOnlineTurn() ? "ok" : "wait");
+      }, 1100);
+    }catch(err){
+      console.error(label, err);
+      showOnlineSyncPill("⚠️ Senkron hatası", "warn");
+      playSound("fail");
+    }
+  }
+
+  const _saveOnlineFullStateV4344 = saveOnlineFullState;
+  saveOnlineFullState = async function(reason="Güncellendi", extra={}){
+    showOnlineSyncPill("🔄 Kaydediliyor...", "wait");
+    await _saveOnlineFullStateV4344(reason, extra);
+    showOnlineSyncPill("🌐 Online", "ok");
+  };
+
+  const _listenOnlineGameStateV4344 = listenOnlineGameState;
+  listenOnlineGameState = function(code){
+    _listenOnlineGameStateV4344(code);
+
+    // ekstra güvenlik: bağlantı koparsa otomatik tekrar dinle
+    if(onlineReconnectTimer) clearInterval(onlineReconnectTimer);
+    onlineReconnectTimer = setInterval(() => {
+      if(isOnlineGame && onlineGameRoomCode && document.visibilityState === "visible"){
+        updateOnlineHeartbeat();
+      }
+    }, 15000);
+  };
+
+  const _applyOnlineGameStateV4344 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    onlineLastRoomSnapshot = data;
+    _applyOnlineGameStateV4344(data);
+
+    document.body.classList.toggle("online-my-turn", isOnlineGame && isMyOnlineTurn());
+    document.body.classList.toggle("online-wait-turn", isOnlineGame && !isMyOnlineTurn());
+
+    // Online oyuncu karakterini panelde küçük göster
+    document.querySelectorAll(".player-row").forEach((row, index) => {
+      const p = players[index];
+      if(!p) return;
+      if(!row.querySelector(".row-character")){
+        const ch = document.createElement("i");
+        ch.className = "row-character";
+        ch.textContent = p.character || "";
+        row.appendChild(ch);
+      }else{
+        row.querySelector(".row-character").textContent = p.character || "";
+      }
+    });
+  };
+
+  // Kritik aksiyonları kilit + görsel senkronla sar
+  if(typeof buyCurrentSpace === "function"){
+    const _buyCurrentSpaceV4344 = buyCurrentSpace;
+    buyCurrentSpace = function(){
+      if(isOnlineGame){
+        return safeOnlineAction("buy", () => _buyCurrentSpaceV4344());
+      }
+      return _buyCurrentSpaceV4344();
+    };
+  }
+
+  if(typeof payPendingRent === "function"){
+    const _payPendingRentV4344 = payPendingRent;
+    payPendingRent = function(){
+      if(isOnlineGame){
+        return safeOnlineAction("rent", () => _payPendingRentV4344());
+      }
+      return _payPendingRentV4344();
+    };
+  }
+
+  if(typeof drawChanceCard === "function"){
+    const _drawChanceCardV4344 = drawChanceCard;
+    drawChanceCard = function(){
+      if(isOnlineGame){
+        return safeOnlineAction("chance", () => _drawChanceCardV4344());
+      }
+      return _drawChanceCardV4344();
+    };
+  }
+
+  if(typeof buildOnProperty === "function"){
+    const _buildOnPropertyV4344 = buildOnProperty;
+    buildOnProperty = function(spaceIndex){
+      if(isOnlineGame){
+        return safeOnlineAction("build", () => _buildOnPropertyV4344(spaceIndex));
+      }
+      return _buildOnPropertyV4344(spaceIndex);
+    };
+  }
+
+  const _rollDiceV4344 = rollDice;
+  rollDice = function(){
+    if(isOnlineGame){
+      return safeOnlineAction("dice", () => _rollDiceV4344());
+    }
+    return _rollDiceV4344();
+  };
+
+  const _finishTurnV4344 = finishTurn;
+  finishTurn = function(){
+    if(isOnlineGame){
+      return safeOnlineAction("turn", () => _finishTurnV4344());
+    }
+    return _finishTurnV4344();
+  };
+
+  const _closeOnlineOverlayV4344 = closeOnlineOverlay;
+  closeOnlineOverlay = function(){
+    stopOnlineHeartbeat();
+    hideOnlineSyncPill();
+    _closeOnlineOverlayV4344();
+  };
+
+  // Görsel: token hareket edince küçük pop efekti
+  const _moveTokenVisualV4344 = moveTokenVisual;
+  moveTokenVisual = function(playerIndex){
+    _moveTokenVisualV4344(playerIndex);
+    const token = $(`playerToken${playerIndex}`);
+    if(token){
+      token.classList.remove("token-pop");
+      void token.offsetWidth;
+      token.classList.add("token-pop");
+    }
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);

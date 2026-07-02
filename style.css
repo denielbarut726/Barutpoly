@@ -5794,3 +5794,151 @@ button:disabled{
   font-size:17px;
   cursor:pointer;
 }
+
+
+/* ===== V43 + V44 STABILITY + POLISH UI ===== */
+
+.online-sync-pill{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  z-index:99940;
+  padding:9px 14px;
+  border-radius:999px;
+  background:rgba(14,165,233,.16);
+  border:1px solid rgba(125,211,252,.35);
+  color:#bae6fd;
+  font-size:13px;
+  font-weight:900;
+  pointer-events:none;
+  box-shadow:0 0 20px rgba(14,165,233,.14);
+  backdrop-filter:blur(10px);
+}
+
+.online-sync-pill.ok{
+  background:rgba(34,197,94,.14);
+  border-color:rgba(74,222,128,.35);
+  color:#bbf7d0;
+}
+
+.online-sync-pill.wait{
+  background:rgba(246,196,83,.14);
+  border-color:rgba(246,196,83,.35);
+  color:#fef3c7;
+}
+
+.online-sync-pill.warn{
+  background:rgba(239,68,68,.14);
+  border-color:rgba(248,113,113,.38);
+  color:#fecaca;
+}
+
+body.online-action-busy button{
+  transition:.15s ease;
+}
+
+body.online-my-turn #sidePanel{
+  box-shadow:0 0 30px rgba(34,197,94,.22), inset 0 0 24px rgba(255,255,255,.035);
+}
+
+body.online-wait-turn #sidePanel{
+  box-shadow:0 0 30px rgba(246,196,83,.16), inset 0 0 24px rgba(255,255,255,.035);
+}
+
+.lobby-player.disconnected{
+  opacity:.48;
+  filter:grayscale(.75);
+  border-color:rgba(248,113,113,.28);
+}
+
+.lobby-player.disconnected .lobby-avatar{
+  background:rgba(239,68,68,.14);
+}
+
+.row-character{
+  justify-self:end;
+  font-style:normal;
+  font-size:18px;
+  line-height:1;
+  filter:drop-shadow(0 0 6px rgba(246,196,83,.35));
+}
+
+.player-row{
+  position:relative;
+}
+
+.player-row .row-character{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.player-row strong{
+  margin-right:28px;
+}
+
+.online-character-token.token-pop{
+  animation:tokenPop .28s ease;
+}
+
+@keyframes tokenPop{
+  0%{transform:translate(-50%,-50%) scale(.85)}
+  55%{transform:translate(-50%,-50%) scale(1.22)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
+
+.tile.owned{
+  animation:ownedPulse .45s ease;
+}
+
+@keyframes ownedPulse{
+  0%{filter:brightness(1)}
+  50%{filter:brightness(1.45)}
+  100%{filter:brightness(1)}
+}
+
+#propertyCard,
+.chance-card,
+.auction-card,
+.jail-choice-card{
+  animation-duration:.32s !important;
+}
+
+.main-action:not(:disabled),
+.end-turn-btn:not(:disabled){
+  position:relative;
+  overflow:hidden;
+}
+
+.main-action:not(:disabled)::after,
+.end-turn-btn:not(:disabled)::after{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:translateX(-100%) rotate(20deg);
+  animation:buttonShine 2.2s infinite;
+}
+
+@keyframes buttonShine{
+  0%{transform:translateX(-120%) rotate(20deg)}
+  45%,100%{transform:translateX(120%) rotate(20deg)}
+}
+
+@media (hover:none) and (pointer:coarse){
+  .online-sync-pill{
+    right:8px;
+    bottom:8px;
+    padding:6px 9px;
+    font-size:10px;
+  }
+
+  .player-row .row-character{
+    display:none;
+  }
+
+  .player-row strong{
+    margin-right:0;
+  }
+}
