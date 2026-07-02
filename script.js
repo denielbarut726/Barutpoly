@@ -4753,6 +4753,357 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V40 MEGA ONLINE CORE =====
+     Tek sürümde ana online senkron:
+     - oyuncu para/konum/mülk
+     - satın alma
+     - kira ödeme
+     - vergi/şans/hapis sonrası state
+     - ev/otel state
+     - tur state
+  */
+
+  let onlineSavingState = false;
+  let onlineLastStateWrite = 0;
+
+  function serializeOnlinePlayerFull(p){
+    return {
+      id:p.id,
+      name:p.name,
+      host:!!p.host,
+      character:p.character || "🚗",
+      money:Number.isFinite(Number(p.money)) ? Number(p.money) : 1500,
+      position:Number.isFinite(Number(p.position)) ? Number(p.position) : 0,
+      owned:Array.isArray(p.owned) ? [...p.owned] : [],
+      housesAvailable:Number.isFinite(Number(p.housesAvailable)) ? Number(p.housesAvailable) : 12,
+      hotelsAvailable:Number.isFinite(Number(p.hotelsAvailable)) ? Number(p.hotelsAvailable) : 4,
+      jailTurns:Number.isFinite(Number(p.jailTurns)) ? Number(p.jailTurns) : 0,
+      isBot:false
+    };
+  }
+
+  function serializeOnlinePlayersFull(){
+    return players.map(serializeOnlinePlayerFull);
+  }
+
+  function collectBuildState(){
+    const build = {};
+    document.querySelectorAll(".tile").forEach((tile, index) => {
+      const marker = tile.querySelector(".build-marker");
+      if(marker){
+        const houses = marker.querySelectorAll("i").length;
+        build[index] = {
+          type: marker.classList.contains("hotel") ? "hotel" : "house",
+          count: marker.classList.contains("hotel") ? 5 : houses
+        };
+      }
+    });
+    return build;
+  }
+
+  function applyBuildState(buildState){
+    if(!buildState || typeof buildState !== "object") return;
+
+    document.querySelectorAll(".tile .build-marker").forEach(m => m.remove());
+
+    Object.entries(buildState).forEach(([indexRaw, info]) => {
+      const index = Number(indexRaw);
+      const tile = document.querySelectorAll(".tile")[index];
+      if(!tile || !info) return;
+
+      const marker = document.createElement("div");
+      marker.className = "build-marker";
+      if(info.type === "hotel") marker.classList.add("hotel");
+
+      const count = info.type === "hotel" ? 1 : Math.max(1, Math.min(4, Number(info.count) || 1));
+      for(let i=0;i<count;i++){
+        const item = document.createElement("i");
+        marker.appendChild(item);
+      }
+
+      tile.appendChild(marker);
+    });
+  }
+
+  async function saveOnlineFullState(reason="Güncellendi", extra={}){
+    if(!isOnlineGame || !onlineGameRoomCode || !initFirebaseLobby()) return;
+    if(onlineSavingState) return;
+
+    onlineSavingState = true;
+    onlineLastStateWrite = Date.now();
+
+    try{
+      const diceOneValue = Number($("diceOne")?.dataset.value || 1);
+      const diceTwoValue = Number($("diceTwo")?.dataset.value || 1);
+
+      await roomRef(onlineGameRoomCode).set({
+        gameState:{
+          players: serializeOnlinePlayersFull(),
+          activePlayerIndex,
+          hasRolledThisTurn,
+          canEndTurn,
+          diceOne: diceOneValue,
+          diceTwo: diceTwoValue,
+          buildState: collectBuildState(),
+          message: reason,
+          ...extra
+        },
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+    }catch(err){
+      console.error("Online state kaydedilemedi:", err);
+    }finally{
+      onlineSavingState = false;
+    }
+  }
+
+  const _applyOnlineGameStateV40 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    _applyOnlineGameStateV40(data);
+
+    if(data?.buildState){
+      applyBuildState(data.buildState);
+    }
+
+    refreshTileOwnership?.();
+    renderPlayers?.();
+    updatePanel?.();
+    renderLeftPlayerPanel?.();
+
+    if(data?.message && $("diceTotal")){
+      $("diceTotal").textContent = data.message;
+    }
+
+    if(isOnlineGame){
+      setOnlineControls?.();
+    }
+  };
+
+  function isOnlineActionAllowed(){
+    if(!isOnlineGame) return true;
+    return isMyOnlineTurn();
+  }
+
+  async function afterOnlineActionSync(reason, delay=250){
+    if(!isOnlineGame) return;
+    setTimeout(() => saveOnlineFullState(reason), delay);
+  }
+
+  // Satın alma online senkron
+  if(typeof buyCurrentSpace === "function"){
+    const _buyCurrentSpaceV40 = buyCurrentSpace;
+    buyCurrentSpace = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      const beforeOwned = players[activePlayerIndex]?.owned?.length || 0;
+      _buyCurrentSpaceV40();
+
+      const afterOwned = players[activePlayerIndex]?.owned?.length || 0;
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        const lastOwned = p?.owned?.[p.owned.length - 1];
+        const name = boardSpaces[lastOwned]?.n || "mülk";
+        afterOnlineActionSync(afterOwned > beforeOwned ? `${p.name} ${name} satın aldı.` : `${p?.name || "Oyuncu"} işlem yaptı.`, 350);
+      }
+    };
+  }
+
+  // Kira ödeme online senkron
+  if(typeof payPendingRent === "function"){
+    const _payPendingRentV40 = payPendingRent;
+    payPendingRent = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _payPendingRentV40();
+
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        afterOnlineActionSync(`${p?.name || "Oyuncu"} kira ödedi.`, 250);
+      }
+    };
+  }
+
+  // Şans kartı online senkron
+  if(typeof drawChanceCard === "function"){
+    const _drawChanceCardV40 = drawChanceCard;
+    drawChanceCard = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _drawChanceCardV40();
+
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        afterOnlineActionSync(`${p?.name || "Oyuncu"} şans kartı çekti.`, 1800);
+      }
+    };
+  }
+
+  // Hapis seçimleri online senkron
+  if(typeof choosePayBail === "function"){
+    const _choosePayBailV40 = choosePayBail;
+    choosePayBail = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _choosePayBailV40();
+
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        afterOnlineActionSync(`${p?.name || "Oyuncu"} kefalet ödedi.`, 250);
+      }
+    };
+  }
+
+  if(typeof chooseStayInJail === "function"){
+    const _chooseStayInJailV40 = chooseStayInJail;
+    chooseStayInJail = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _chooseStayInJailV40();
+
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        afterOnlineActionSync(`${p?.name || "Oyuncu"} hapiste kalmayı seçti.`, 250);
+      }
+    };
+  }
+
+  // Ev/Otel online senkron
+  if(typeof buildOnProperty === "function"){
+    const _buildOnPropertyV40 = buildOnProperty;
+    buildOnProperty = function(spaceIndex){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _buildOnPropertyV40(spaceIndex);
+
+      if(isOnlineGame){
+        const p = players[activePlayerIndex];
+        const name = boardSpaces[spaceIndex]?.n || "mülk";
+        afterOnlineActionSync(`${p?.name || "Oyuncu"} ${name} üstüne yapı kurdu.`, 350);
+      }
+    };
+  }
+
+  // Karta tıklama: online modda sıra sende değilse satın alma/kira işlemi yaptırma, sadece göster.
+  const _openCardV40 = openCard;
+  openCard = function(space, index=null){
+    _openCardV40(space, index);
+
+    if(isOnlineGame && !isOnlineActionAllowed()){
+      const buyBtn = $("buyBtn");
+      if(buyBtn){
+        buyBtn.disabled = true;
+        buyBtn.textContent = "Sıra sende değil";
+      }
+    }
+  };
+
+  // Vergi ve özel kareler afterPlayerLands içinde değişiyorsa hemen state yaz.
+  if(typeof afterPlayerLands === "function"){
+    const _afterPlayerLandsV40 = afterPlayerLands;
+    afterPlayerLands = function(playerIndex, landedIndex){
+      _afterPlayerLandsV40(playerIndex, landedIndex);
+
+      if(isOnlineGame && playerIndex === activePlayerIndex){
+        const space = boardSpaces[landedIndex];
+        const p = players[playerIndex];
+        if(space?.t === "tax"){
+          afterOnlineActionSync(`${p?.name || "Oyuncu"} ${space.n} ödedi.`, 450);
+        }else if(space?.n === "KODESE GİR"){
+          afterOnlineActionSync(`${p?.name || "Oyuncu"} kodese girdi.`, 450);
+        }else if(space?.t === "empty" || space?.t === "corner"){
+          afterOnlineActionSync(`${p?.name || "Oyuncu"} ${space.n} karesine geldi.`, 450);
+        }
+      }
+    };
+  }
+
+  // Tur bitirme kesin state
+  const _finishTurnV40 = finishTurn;
+  finishTurn = async function(){
+    if(isOnlineGame && !isOnlineActionAllowed()){
+      playSound("fail");
+      return;
+    }
+
+    _finishTurnV40();
+
+    if(isOnlineGame){
+      await saveOnlineFullState(`Sıra ${players[activePlayerIndex]?.name || "oyuncuda"}.`);
+    }
+  };
+
+  // Online state gelince satın alma ve buton kilitleri doğru güncellensin.
+  const _setOnlineControlsV40 = setOnlineControls;
+  setOnlineControls = function(){
+    _setOnlineControlsV40();
+
+    if(!isOnlineGame) return;
+
+    const myTurn = isMyOnlineTurn();
+    ["buyBtn","drawChanceBtn","payRentBtn","stayJailBtn","payBailBtn","buildHouseBtn","buildHotelBtn"].forEach(id => {
+      const btn = $(id);
+      if(btn){
+        btn.disabled = !myTurn || btn.disabled;
+        if(!myTurn && id === "buyBtn") btn.textContent = "Sıra sende değil";
+      }
+    });
+  };
+
+  // Başlatırken tüm oyuncular için tam state yaz.
+  const _writeInitialOnlineGameStateV40 = writeInitialOnlineGameState;
+  writeInitialOnlineGameState = async function(){
+    if(!onlineCurrentRoomCode || !initFirebaseLobby()) return;
+
+    const finalPlayers = onlineLobbyPlayersCache.map((p, index) => ({
+      id: p.id,
+      name: p.name || `Oyuncu ${index + 1}`,
+      host: !!p.host,
+      character: p.character || (p.id === onlinePlayerId ? selectedCharacter : "🚗"),
+      money: 1500,
+      position: 0,
+      owned: [],
+      housesAvailable: 12,
+      hotelsAvailable: 4,
+      jailTurns: 0
+    }));
+
+    await roomRef(onlineCurrentRoomCode).set({
+      status: "playing",
+      gameState: {
+        players: finalPlayers,
+        activePlayerIndex: 0,
+        hasRolledThisTurn: false,
+        canEndTurn: false,
+        round: 1,
+        diceOne: 1,
+        diceTwo: 1,
+        buildState: {},
+        message: "Online oyun başladı. Sıra ilk oyuncuda."
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
