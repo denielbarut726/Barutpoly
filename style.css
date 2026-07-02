@@ -6113,3 +6113,408 @@ body.online-wait-turn #sidePanel{
   color:#F6C453;
   font-weight:900;
 }
+
+
+/* ===== V46 MEGA PACK UI ===== */
+
+/* Aktivite artık sohbet gibi kaydırılabilir */
+.activity-panel{
+  max-height:270px !important;
+}
+
+.activity-feed{
+  max-height:220px !important;
+  overflow-y:auto !important;
+  padding-right:4px;
+  scroll-behavior:smooth;
+}
+
+.activity-feed::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar{
+  width:6px;
+}
+
+.activity-feed::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb{
+  background:rgba(246,196,83,.35);
+  border-radius:999px;
+}
+
+/* Sohbet paneli aktivite ve oyuncu alanı arasında */
+.chat-panel{
+  position:absolute;
+  left:22px;
+  top:305px;
+  width:300px;
+  max-height:260px;
+  z-index:7;
+  padding:12px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(2,6,23,.82));
+  border:1px solid rgba(125,211,252,.28);
+  box-shadow:0 0 26px rgba(14,165,233,.12), inset 0 0 18px rgba(255,255,255,.025);
+  backdrop-filter:blur(14px);
+}
+
+.chat-title{
+  color:#7dd3fc;
+  font-weight:900;
+  letter-spacing:2px;
+  font-size:12px;
+  margin-bottom:8px;
+  text-align:center;
+}
+
+.chat-messages{
+  height:160px;
+  overflow-y:auto;
+  display:grid;
+  gap:6px;
+  padding-right:3px;
+}
+
+.chat-empty{
+  color:#94a3b8;
+  text-align:center;
+  font-size:13px;
+  font-weight:800;
+  padding:12px 6px;
+}
+
+.chat-message{
+  padding:7px 9px;
+  border-radius:12px;
+  background:rgba(15,23,42,.82);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.chat-message.me{
+  background:rgba(14,165,233,.14);
+  border-color:rgba(125,211,252,.24);
+}
+
+.chat-message b{
+  display:block;
+  color:#F6C453;
+  font-size:12px;
+  margin-bottom:2px;
+}
+
+.chat-message span{
+  display:block;
+  color:#e5e7eb;
+  font-size:13px;
+  line-height:1.18;
+  word-break:break-word;
+}
+
+.chat-input-row{
+  display:grid;
+  grid-template-columns:1fr 68px;
+  gap:6px;
+  margin-top:8px;
+}
+
+.chat-input-row input{
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(125,211,252,.24);
+  background:rgba(2,6,23,.75);
+  color:white;
+  padding:0 9px;
+  outline:none;
+  font-weight:800;
+}
+
+.chat-input-row button{
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(180deg,#0ea5e9,#1d4ed8);
+  color:white;
+  font-weight:900;
+  cursor:pointer;
+}
+
+/* Profil / Tema */
+.profile-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99990;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.70);
+  backdrop-filter:blur(12px);
+  opacity:0;
+  pointer-events:none;
+  transition:.24s ease;
+}
+
+.profile-overlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.profile-card{
+  width:min(860px,94vw);
+  max-height:92dvh;
+  overflow:auto;
+  position:relative;
+  padding:28px;
+  border-radius:32px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(168,85,247,.18),transparent 36%),
+    linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
+  border:2px solid rgba(246,196,83,.42);
+  box-shadow:0 0 60px rgba(168,85,247,.24);
+}
+
+.profile-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:38px;
+  height:38px;
+  border:none;
+  border-radius:50%;
+  background:rgba(255,255,255,.10);
+  color:white;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.profile-small{
+  color:#d8b4fe;
+  letter-spacing:4px;
+  font-weight:900;
+  text-align:center;
+  margin-bottom:8px;
+}
+
+.profile-card h2{
+  font-family:"Cinzel",serif;
+  color:#F6C453;
+  font-size:38px;
+  text-align:center;
+  margin-bottom:18px;
+}
+
+.profile-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.profile-box,.reward-box{
+  padding:16px;
+  border-radius:18px;
+  background:rgba(15,23,42,.70);
+  border:1px solid rgba(125,211,252,.18);
+}
+
+.profile-box label{
+  display:block;
+  color:#7dd3fc;
+  font-weight:900;
+  margin-bottom:8px;
+}
+
+.profile-box input{
+  width:100%;
+  height:42px;
+  border-radius:12px;
+  border:1px solid rgba(125,211,252,.22);
+  background:rgba(2,6,23,.72);
+  color:white;
+  padding:0 12px;
+  font-size:16px;
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+.profile-box button,
+.reward-box button{
+  height:40px;
+  padding:0 14px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(180deg,#f6c453,#a76b17);
+  color:#111827;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.profile-stat-title{
+  color:#F6C453;
+  font-weight:900;
+  letter-spacing:1px;
+  margin-bottom:10px;
+}
+
+.profile-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.profile-stats div{
+  text-align:center;
+  padding:10px 6px;
+  border-radius:12px;
+  background:rgba(2,6,23,.48);
+}
+
+.profile-stats b{
+  display:block;
+  font-size:22px;
+  color:white;
+}
+
+.profile-stats span{
+  display:block;
+  color:#94a3b8;
+  font-size:11px;
+  font-weight:900;
+}
+
+.theme-section{
+  margin-top:12px;
+}
+
+.theme-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+}
+
+.theme-card{
+  min-height:110px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(15,23,42,.72);
+  color:white;
+  cursor:pointer;
+  padding:10px;
+  transition:.18s ease;
+}
+
+.theme-card.active{
+  outline:2px solid #F6C453;
+  box-shadow:0 0 20px rgba(246,196,83,.22);
+}
+
+.theme-card span{
+  display:block;
+  font-size:30px;
+  margin-bottom:6px;
+}
+
+.theme-card b{
+  display:block;
+  color:#F6C453;
+}
+
+.theme-card small{
+  display:block;
+  color:#94a3b8;
+  margin-top:4px;
+}
+
+.reward-box{
+  margin-top:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.reward-box b{
+  display:block;
+  color:#F6C453;
+  font-size:18px;
+}
+
+.reward-box span{
+  display:block;
+  color:#cbd5e1;
+  margin-top:4px;
+  font-weight:800;
+}
+
+/* Temalar */
+body[data-theme="dark"]{
+  --gold:#38bdf8;
+  --purple:#6366f1;
+}
+
+body[data-theme="gold"]{
+  --gold:#fbbf24;
+  --purple:#d97706;
+}
+
+body[data-theme="istanbul"]{
+  --gold:#7dd3fc;
+  --purple:#2563eb;
+}
+
+body[data-theme="forest"]{
+  --gold:#86efac;
+  --purple:#16a34a;
+}
+
+body[data-theme="fire"]{
+  --gold:#fb7185;
+  --purple:#dc2626;
+}
+
+body[data-theme="dark"] #game,
+body[data-theme="dark"] #menu{
+  filter:saturate(1.05) hue-rotate(10deg);
+}
+
+body[data-theme="gold"] #board{
+  outline-color:rgba(251,191,36,.95) !important;
+}
+
+body[data-theme="forest"] #board{
+  outline-color:rgba(134,239,172,.88) !important;
+}
+
+body[data-theme="fire"] #board{
+  outline-color:rgba(251,113,133,.88) !important;
+}
+
+/* 8 oyuncu renkleri */
+.player-token.p7{background:#a855f7;color:#a855f7}
+.player-token.p8{background:#f97316;color:#f97316}
+.player-row.purple span{background:#a855f7}
+.player-row.orange span{background:#f97316}
+
+/* Mobil */
+@media (hover:none) and (pointer:coarse){
+  .activity-panel{
+    display:none !important;
+  }
+
+  .chat-panel{
+    display:none !important;
+  }
+
+  .profile-card{
+    padding:18px;
+  }
+
+  .profile-grid{
+    grid-template-columns:1fr;
+  }
+
+  .theme-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .reward-box{
+    flex-direction:column;
+    align-items:stretch;
+  }
+}

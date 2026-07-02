@@ -6054,6 +6054,340 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 500);
 
 
+
+  /* ===== V46 MEGA PACK =====
+     - Aktivite paneli scroll
+     - Online oyun içi sohbet
+     - 8 oyuncu desteği
+     - Basit profil/hesap
+     - İstatistikler
+     - 6 tema
+     - Bildirim/toast sistemi
+     - Günlük ödül
+  */
+
+  const V46_THEMES = [
+    {id:"classic", name:"Klasik", icon:"👑", desc:"Orijinal BarutPoly"},
+    {id:"dark", name:"Gece", icon:"🌙", desc:"Koyu neon"},
+    {id:"gold", name:"Altın", icon:"🏆", desc:"Premium altın"},
+    {id:"istanbul", name:"İstanbul", icon:"🌉", desc:"Mavi şehir"},
+    {id:"forest", name:"Orman", icon:"🌲", desc:"Yeşil sakin"},
+    {id:"fire", name:"Alev", icon:"🔥", desc:"Kırmızı enerji"}
+  ];
+
+  const profileState = {
+    name: localStorage.getItem("barutpolyProfileName") || "",
+    theme: localStorage.getItem("barutpolyTheme") || "classic",
+    coins: Number(localStorage.getItem("barutpolyCoins") || 0),
+    stats: JSON.parse(localStorage.getItem("barutpolyStats") || '{"games":0,"wins":0,"onlineGames":0,"properties":0}')
+  };
+
+  let chatUnsubscribe = null;
+  let chatReady = false;
+
+  function saveProfileState(){
+    localStorage.setItem("barutpolyProfileName", profileState.name || "");
+    localStorage.setItem("barutpolyTheme", profileState.theme || "classic");
+    localStorage.setItem("barutpolyCoins", String(profileState.coins || 0));
+    localStorage.setItem("barutpolyStats", JSON.stringify(profileState.stats || {}));
+  }
+
+  function addStat(key, amount=1){
+    profileState.stats[key] = Number(profileState.stats[key] || 0) + amount;
+    saveProfileState();
+    renderProfileStats();
+  }
+
+  function applyTheme(themeId=profileState.theme){
+    profileState.theme = themeId;
+    document.body.dataset.theme = themeId;
+    saveProfileState();
+  }
+
+  function renderThemeGrid(){
+    const grid = $("themeGrid");
+    if(!grid) return;
+    grid.innerHTML = "";
+
+    V46_THEMES.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = `theme-card ${profileState.theme === t.id ? "active" : ""}`;
+      btn.innerHTML = `<span>${t.icon}</span><b>${t.name}</b><small>${t.desc}</small>`;
+      btn.addEventListener("click", () => {
+        applyTheme(t.id);
+        renderThemeGrid();
+        showFinalToast?.(`${t.name} teması aktif.`, "ok");
+        playSound("click");
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderProfileStats(){
+    const holder = $("profileStats");
+    if(!holder) return;
+    holder.innerHTML = `
+      <div><b>${profileState.coins}</b><span>BP Coin</span></div>
+      <div><b>${profileState.stats.games || 0}</b><span>Oyun</span></div>
+      <div><b>${profileState.stats.wins || 0}</b><span>Galibiyet</span></div>
+      <div><b>${profileState.stats.properties || 0}</b><span>Mülk</span></div>
+    `;
+  }
+
+  function openProfileOverlay(){
+    const overlay = $("profileOverlay");
+    if(!overlay) return;
+    if($("profileNameInput")) $("profileNameInput").value = profileState.name || "";
+    renderThemeGrid();
+    renderProfileStats();
+    updateDailyRewardUI();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeProfileOverlay(){
+    const overlay = $("profileOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  function saveProfileName(){
+    const name = $("profileNameInput")?.value.trim();
+    profileState.name = name || "Oyuncu";
+    saveProfileState();
+    showFinalToast?.("Profil kaydedildi.", "ok");
+    playSound("click");
+  }
+
+  function todayKey(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function updateDailyRewardUI(){
+    const claimed = localStorage.getItem("barutpolyDailyReward") === todayKey();
+    const btn = $("claimDailyRewardBtn");
+    const txt = $("dailyRewardText");
+
+    if(btn){
+      btn.disabled = claimed;
+      btn.textContent = claimed ? "Alındı" : "Ödülü Al";
+    }
+    if(txt){
+      txt.textContent = claimed ? "Bugünkü ödülü aldın. Yarın tekrar gel." : "Bugün 100 BP Coin kazanabilirsin.";
+    }
+  }
+
+  function claimDailyReward(){
+    const key = todayKey();
+    if(localStorage.getItem("barutpolyDailyReward") === key){
+      showFinalToast?.("Bugünkü ödülü zaten aldın.", "warn");
+      return;
+    }
+
+    localStorage.setItem("barutpolyDailyReward", key);
+    profileState.coins += 100;
+    saveProfileState();
+    renderProfileStats();
+    updateDailyRewardUI();
+    showFinalToast?.("🎁 100 BP Coin kazandın!", "ok", 3600);
+    playSound("money");
+  }
+
+  function getDisplayPlayerName(){
+    if(profileState.name) return profileState.name;
+    if(isOnlineGame){
+      const me = players.find(p => p.id === onlinePlayerId);
+      if(me?.name) return me.name;
+    }
+    return document.querySelector(".player-name")?.value?.trim() || "Oyuncu";
+  }
+
+  function localChatMessage(text){
+    const holder = $("chatMessages");
+    if(!holder) return;
+    holder.querySelector(".chat-empty")?.remove();
+
+    const row = document.createElement("div");
+    row.className = "chat-message local";
+    row.innerHTML = `<b>${escapeHTML(getDisplayPlayerName())}</b><span>${escapeHTML(text)}</span>`;
+    holder.appendChild(row);
+    holder.scrollTop = holder.scrollHeight;
+  }
+
+  async function sendChatMessage(){
+    const input = $("chatInput");
+    const text = input?.value.trim();
+    if(!text) return;
+
+    input.value = "";
+
+    if(isOnlineGame && onlineGameRoomCode && initFirebaseLobby()){
+      try{
+        await roomRef(onlineGameRoomCode).collection("messages").add({
+          playerId: onlinePlayerId,
+          name: getDisplayPlayerName(),
+          text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        playSound("click");
+      }catch(err){
+        console.error("chat gönderilemedi", err);
+        localChatMessage(text);
+        showFinalToast?.("Mesaj yerel gösterildi, online gönderilemedi.", "warn");
+      }
+    }else{
+      localChatMessage(text);
+      playSound("click");
+    }
+  }
+
+  function startChatListener(){
+    if(chatUnsubscribe){
+      chatUnsubscribe();
+      chatUnsubscribe = null;
+    }
+
+    const holder = $("chatMessages");
+    if(holder) holder.innerHTML = `<div class="chat-empty">Mesajlar yükleniyor...</div>`;
+
+    if(!isOnlineGame || !onlineGameRoomCode || !initFirebaseLobby()){
+      if(holder) holder.innerHTML = `<div class="chat-empty">Klasik modda mesajlar sadece bu ekranda görünür.</div>`;
+      return;
+    }
+
+    chatUnsubscribe = roomRef(onlineGameRoomCode).collection("messages")
+      .orderBy("createdAt", "asc")
+      .limit(80)
+      .onSnapshot((snapshot) => {
+        const holder = $("chatMessages");
+        if(!holder) return;
+        holder.innerHTML = "";
+
+        if(snapshot.empty){
+          holder.innerHTML = `<div class="chat-empty">Henüz mesaj yok.</div>`;
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const m = doc.data();
+          const row = document.createElement("div");
+          row.className = `chat-message ${m.playerId === onlinePlayerId ? "me" : ""}`;
+          row.innerHTML = `<b>${escapeHTML(m.name || "Oyuncu")}</b><span>${escapeHTML(m.text || "")}</span>`;
+          holder.appendChild(row);
+        });
+
+        holder.scrollTop = holder.scrollHeight;
+      }, (err) => {
+        console.error("chat dinleme hata", err);
+        showFinalToast?.("Sohbet bağlantısı koptu.", "warn");
+      });
+  }
+
+  const _startOnlineGameFromRoomV46 = startOnlineGameFromRoom;
+  startOnlineGameFromRoom = async function(data){
+    await _startOnlineGameFromRoomV46(data);
+    startChatListener();
+    addStat("onlineGames", 1);
+    addStat("games", 1);
+  };
+
+  const _showScreenV46 = showScreen;
+  showScreen = function(name){
+    _showScreenV46(name);
+    if(name === "game"){
+      setTimeout(() => {
+        const feed = $("activityFeed");
+        if(feed) feed.scrollTop = feed.scrollHeight;
+        startChatListener();
+      }, 200);
+    }
+  };
+
+  const _addActivityV46 = typeof addActivity === "function" ? addActivity : null;
+  if(_addActivityV46){
+    addActivity = function(text){
+      _addActivityV46(text);
+      const feed = $("activityFeed");
+      if(feed) feed.scrollTop = feed.scrollHeight;
+    };
+  }
+
+  // 8 oyuncu token renkleri için renk fonksiyonunu genişlet
+  getPlayerColor = function(index){
+    const colors = ["#2563eb","#ef4444","#22c55e","#facc15","#ec4899","#06b6d4","#a855f7","#f97316"];
+    return colors[index % colors.length];
+  };
+
+  // Satın alma istatistiği
+  if(typeof buyCurrentSpace === "function"){
+    const _buyCurrentSpaceV46 = buyCurrentSpace;
+    buyCurrentSpace = function(){
+      const before = players[activePlayerIndex]?.owned?.length || 0;
+      const result = _buyCurrentSpaceV46();
+      const after = players[activePlayerIndex]?.owned?.length || 0;
+      if(after > before) addStat("properties", 1);
+      return result;
+    };
+  }
+
+  // Kazanma istatistiği
+  const _showOnlineWinnerV46 = showOnlineWinner;
+  showOnlineWinner = function(winner){
+    _showOnlineWinnerV46(winner);
+    if(winner?.id === onlinePlayerId){
+      addStat("wins", 1);
+      profileState.coins += 250;
+      saveProfileState();
+      showFinalToast?.("🏆 +250 BP Coin kazandın!", "ok", 4200);
+    }
+  };
+
+  // Bildirimler
+  function notifyGame(text){
+    showFinalToast?.(text, "info", 3200);
+    if("Notification" in window && Notification.permission === "granted"){
+      new Notification("BarutPoly", {body:text});
+    }
+  }
+
+  async function requestNotifications(){
+    if(!("Notification" in window)){
+      showFinalToast?.("Bu cihaz bildirim desteklemiyor.", "warn");
+      return;
+    }
+
+    const perm = await Notification.requestPermission();
+    showFinalToast?.(perm === "granted" ? "Bildirimler açıldı." : "Bildirim izni verilmedi.", perm === "granted" ? "ok" : "warn");
+  }
+
+  // Ayarlar butonuna ek olarak profil panelinde bildirim butonu oluştur
+  function addNotificationButtonToProfile(){
+    const box = document.querySelector(".reward-box");
+    if(!box || $("enableNotifyBtn")) return;
+    const btn = document.createElement("button");
+    btn.id = "enableNotifyBtn";
+    btn.textContent = "Bildirim Aç";
+    btn.addEventListener("click", requestNotifications);
+    box.appendChild(btn);
+  }
+
+  const _openProfileOverlayV46 = openProfileOverlay;
+  openProfileOverlay = function(){
+    _openProfileOverlayV46();
+    addNotificationButtonToProfile();
+  };
+
+  // init
+  applyTheme(profileState.theme);
+  setTimeout(() => {
+    renderProfileStats();
+    updateDailyRewardUI();
+  }, 500);
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -6128,6 +6462,14 @@ window.addEventListener("DOMContentLoaded", () => {
   $("confirmExitGameBtn")?.addEventListener("click", resetClassicGameAndGoMenu);
   $("exitGameOverlay")?.addEventListener("click", (e) => { if(e.target === $("exitGameOverlay")) closeExitGameOverlay(); });
   $("backCharacterLobbyBtn")?.addEventListener("click", backFromCharacterToLobby);
+
+  $("profileBtn")?.addEventListener("click", openProfileOverlay);
+  $("closeProfileBtn")?.addEventListener("click", closeProfileOverlay);
+  $("saveProfileBtn")?.addEventListener("click", saveProfileName);
+  $("claimDailyRewardBtn")?.addEventListener("click", claimDailyReward);
+  $("sendChatBtn")?.addEventListener("click", sendChatMessage);
+  $("chatInput")?.addEventListener("keydown", (e) => { if(e.key === "Enter") sendChatMessage(); });
+  $("profileOverlay")?.addEventListener("click", (e) => { if(e.target === $("profileOverlay")) closeProfileOverlay(); });
 
   $("intro").addEventListener("click", () => {
     playMusic();

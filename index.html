@@ -41,8 +41,9 @@
       <button id="onlineBtn" class="menuBtn online-menu-btn"><span>🌐</span><b>ONLINE OYNA</b></button>
       <button id="settingsBtn" class="menuBtn"><span>⚙</span><b>AYARLAR</b></button>
       <button id="howToBtn" class="menuBtn"><span>📖</span><b>NASIL OYNANIR?</b></button>
+      <button id="profileBtn" class="menuBtn"><span>👤</span><b>PROFİL / TEMALAR</b></button>
       <div class="version">
-        <div>v0.45 RC</div>
+        <div>v0.46 Mega</div>
         <div class="creator">By Deniel Demir Barut</div>
       </div>
     </div>
@@ -99,6 +100,8 @@
         <button class="countBtn" data-count="4">4</button>
         <button class="countBtn" data-count="5">5</button>
         <button class="countBtn" data-count="6">6</button>
+        <button class="countBtn" data-count="7">7</button>
+        <button class="countBtn" data-count="8">8</button>
       </div>
 
       <div id="nameInputs" class="name-inputs"></div>
@@ -173,6 +176,18 @@
       <div class="activity-title">CANLI AKTİVİTE</div>
       <div id="activityFeed" class="activity-feed">
         <div class="activity-empty">Oyun başlayınca olaylar burada gözükecek.</div>
+      </div>
+    </div>
+
+
+    <div id="chatPanel" class="chat-panel">
+      <div class="chat-title">OYUN SOHBETİ</div>
+      <div id="chatMessages" class="chat-messages">
+        <div class="chat-empty">Mesajlar burada görünecek.</div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chatInput" type="text" maxlength="120" placeholder="Mesaj yaz...">
+        <button id="sendChatBtn">Gönder</button>
       </div>
     </div>
 
@@ -574,5 +589,40 @@
       <p id="finalLoadingText">Yükleniyor...</p>
     </div>
   </div>
+
+  <div id="profileOverlay" class="profile-overlay hidden">
+    <div class="profile-card">
+      <button id="closeProfileBtn" class="profile-close">×</button>
+      <div class="profile-small">BARUTPOLY PROFİL</div>
+      <h2>Profil & Temalar</h2>
+
+      <div class="profile-grid">
+        <div class="profile-box">
+          <label>Oyuncu Adın</label>
+          <input id="profileNameInput" type="text" maxlength="24" placeholder="Adını yaz">
+          <button id="saveProfileBtn">Kaydet</button>
+        </div>
+
+        <div class="profile-box">
+          <div class="profile-stat-title">İstatistikler</div>
+          <div id="profileStats" class="profile-stats"></div>
+        </div>
+      </div>
+
+      <div class="theme-section">
+        <div class="profile-stat-title">Tema Mağazası</div>
+        <div id="themeGrid" class="theme-grid"></div>
+      </div>
+
+      <div class="reward-box">
+        <div>
+          <b>🎁 Günlük Ödül</b>
+          <span id="dailyRewardText">Bugünkü ödülünü al.</span>
+        </div>
+        <button id="claimDailyRewardBtn">Ödülü Al</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
