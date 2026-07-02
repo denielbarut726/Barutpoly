@@ -6997,3 +6997,200 @@ body[data-theme] #board{
   .theme-grid-large{grid-template-columns:repeat(2,1fr) !important}
   .theme-card{min-height:150px !important}
 }
+
+
+/* ===== V48-52 FINAL FAMILY PACK UI ===== */
+
+.trade-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99992;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.70);
+  backdrop-filter:blur(12px);
+  opacity:0;
+  pointer-events:none;
+  transition:.24s ease;
+}
+
+.trade-overlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.trade-card{
+  width:min(560px,92vw);
+  padding:28px;
+  border-radius:30px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(246,196,83,.18),transparent 42%),
+    linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
+  border:2px solid rgba(246,196,83,.46);
+  position:relative;
+  box-shadow:0 0 55px rgba(168,85,247,.24);
+}
+
+.trade-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:38px;
+  height:38px;
+  border:none;
+  border-radius:50%;
+  background:rgba(255,255,255,.10);
+  color:white;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.trade-small{
+  color:#d8b4fe;
+  letter-spacing:4px;
+  font-weight:900;
+  text-align:center;
+  margin-bottom:8px;
+}
+
+.trade-card h2{
+  font-family:"Cinzel",serif;
+  color:#F6C453;
+  font-size:36px;
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.trade-card p{
+  color:#cbd5e1;
+  text-align:center;
+  font-weight:800;
+  margin-bottom:18px;
+}
+
+.trade-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.trade-grid select,
+.trade-grid input{
+  height:44px;
+  border-radius:12px;
+  border:1px solid rgba(246,196,83,.25);
+  background:rgba(2,6,23,.75);
+  color:white;
+  padding:0 12px;
+  font-weight:900;
+}
+
+.trade-confirm{
+  width:100%;
+  height:48px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(180deg,#f6c453,#a76b17);
+  color:#111827;
+  font-size:17px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.trade-btn-final{
+  background:linear-gradient(180deg,#0f766e,#134e4a) !important;
+}
+
+.final-settings-list{
+  display:grid;
+  gap:10px;
+  margin:16px 0;
+}
+
+.final-settings-list label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px;
+  border-radius:14px;
+  background:rgba(15,23,42,.72);
+  border:1px solid rgba(255,255,255,.10);
+  color:white;
+  font-weight:900;
+}
+
+.final-settings-list input{
+  width:22px;
+  height:22px;
+  accent-color:#F6C453;
+}
+
+.winner-mini-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:16px 0;
+}
+
+.winner-mini-stats div{
+  padding:12px 6px;
+  border-radius:14px;
+  background:rgba(15,23,42,.72);
+  border:1px solid rgba(246,196,83,.20);
+}
+
+.winner-mini-stats b{
+  display:block;
+  color:#F6C453;
+  font-size:20px;
+}
+
+.winner-mini-stats span{
+  display:block;
+  color:#cbd5e1;
+  font-size:11px;
+  font-weight:900;
+}
+
+.bankrupt-player{
+  opacity:.45 !important;
+  filter:grayscale(.9);
+}
+
+.no-animations *,
+.performance-mode *{
+  animation:none !important;
+  transition:none !important;
+}
+
+.performance-mode #gameBgVideo,
+.performance-mode #bgVideo,
+.performance-mode video{
+  display:none !important;
+}
+
+#continueSaveBtn{
+  border-color:rgba(34,197,94,.45) !important;
+}
+
+#continueSaveBtn span{
+  background:rgba(34,197,94,.18) !important;
+}
+
+.level-stat{
+  outline:1px solid rgba(246,196,83,.35);
+}
+
+@media (hover:none) and (pointer:coarse){
+  .trade-grid{
+    grid-template-columns:1fr;
+  }
+
+  .winner-mini-stats{
+    grid-template-columns:1fr;
+  }
+}
+
+#tradeBtn,.trade-overlay{display:none !important;}

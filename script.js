@@ -6765,6 +6765,399 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 350);
 
 
+
+  /* ===== V48-52 FINAL FAMILY PACK =====
+     V48 Takas
+     V49 İflas + Kazanma
+     V50 Save / Continue
+     V51 Premium animasyon + ayarlar
+     V52 Bot AI 2.0 + profil level
+  */
+
+  const FAMILY_VERSION = "BarutPoly 1.0 Family";
+  const SAVE_KEY_FINAL = "barutpolyFamilySaveV1";
+  const SETTINGS_KEY_FINAL = "barutpolyFamilySettings";
+
+  const finalSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY_FINAL) || '{"sfx":true,"music":true,"animations":true,"perf":false}');
+
+  function saveFinalSettings(){
+    finalSettings.sfx = !!$("settingSfx")?.checked;
+    finalSettings.music = !!$("settingMusic")?.checked;
+    finalSettings.animations = !!$("settingAnimations")?.checked;
+    finalSettings.perf = !!$("settingPerf")?.checked;
+    localStorage.setItem(SETTINGS_KEY_FINAL, JSON.stringify(finalSettings));
+    applyFinalSettings();
+    showFinalToast?.("Ayarlar kaydedildi.", "ok");
+  }
+
+  function applyFinalSettings(){
+    document.body.classList.toggle("no-animations", !finalSettings.animations);
+    document.body.classList.toggle("performance-mode", !!finalSettings.perf);
+    try{
+      Object.values(sounds || {}).forEach(a => {
+        if(a) a.muted = !finalSettings.sfx;
+      });
+      if(typeof musicAudio !== "undefined" && musicAudio){
+        musicAudio.muted = !finalSettings.music;
+      }
+    }catch(e){}
+  }
+
+  function openFinalSettings(){
+    const overlay = $("finalSettingsOverlay");
+    if(!overlay) return;
+    if($("settingSfx")) $("settingSfx").checked = finalSettings.sfx;
+    if($("settingMusic")) $("settingMusic").checked = finalSettings.music;
+    if($("settingAnimations")) $("settingAnimations").checked = finalSettings.animations;
+    if($("settingPerf")) $("settingPerf").checked = finalSettings.perf;
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  }
+
+  function closeFinalSettings(){
+    const overlay = $("finalSettingsOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+  }
+
+  // Existing settings button now opens final settings too.
+  const _openSettingsVFinal = typeof openSettings === "function" ? openSettings : null;
+  openSettings = function(){
+    openFinalSettings();
+  };
+
+  function saveCurrentGameFinal(){
+    if(!players || !players.length || $("game")?.classList.contains("hidden")) return;
+    try{
+      const save = {
+        version:FAMILY_VERSION,
+        createdAt:Date.now(),
+        players:players.map(p => ({
+          id:p.id,
+          name:p.name,
+          character:p.character,
+          host:!!p.host,
+          money:p.money,
+          position:p.position,
+          owned:p.owned || [],
+          housesAvailable:p.housesAvailable ?? 12,
+          hotelsAvailable:p.hotelsAvailable ?? 4,
+          jailTurns:p.jailTurns || 0,
+          bankrupt:!!p.bankrupt,
+          isBot:!!p.isBot,
+          className:p.className
+        })),
+        activePlayerIndex,
+        hasRolledThisTurn,
+        canEndTurn,
+        activityLog:activityLog || [],
+        buildState: typeof collectBuildState === "function" ? collectBuildState() : {}
+      };
+      localStorage.setItem(SAVE_KEY_FINAL, JSON.stringify(save));
+      $("continueSaveBtn")?.classList.remove("hidden");
+    }catch(err){
+      console.warn("save hata", err);
+    }
+  }
+
+  function hasSaveFinal(){
+    return !!localStorage.getItem(SAVE_KEY_FINAL);
+  }
+
+  function updateContinueButtonFinal(){
+    const btn = $("continueSaveBtn");
+    if(!btn) return;
+    btn.classList.toggle("hidden", !hasSaveFinal());
+  }
+
+  function continueSavedGameFinal(){
+    const raw = localStorage.getItem(SAVE_KEY_FINAL);
+    if(!raw){
+      showFinalToast?.("Kayıtlı oyun yok.", "warn");
+      return;
+    }
+    try{
+      const save = JSON.parse(raw);
+      players = (save.players || []).map((p,i) => ({
+        ...p,
+        className:p.className || `p${i+1}`,
+        owned:Array.isArray(p.owned) ? p.owned : []
+      }));
+      activePlayerIndex = save.activePlayerIndex || 0;
+      hasRolledThisTurn = !!save.hasRolledThisTurn;
+      canEndTurn = !!save.canEndTurn;
+      activityLog = save.activityLog || [];
+
+      isOnlineGame = false;
+      showScreen("game");
+      setTimeout(() => {
+        createBoard?.();
+        createTokens?.();
+        if(save.buildState && typeof applyBuildState === "function") applyBuildState(save.buildState);
+        refreshTileOwnership?.();
+        renderPlayers?.();
+        renderLeftPlayerPanel?.();
+        updatePanel?.();
+        updateTurnButtons?.();
+        updateTokens?.();
+        showFinalToast?.("Kayıtlı oyun yüklendi.", "ok");
+      }, 100);
+    }catch(err){
+      showFinalToast?.("Kayıt yüklenemedi.", "warn");
+      console.error(err);
+    }
+  }
+
+  setInterval(saveCurrentGameFinal, 15000);
+  setTimeout(updateContinueButtonFinal, 500);
+
+  // Takas Sistemi
+  function openTradeOverlay(){
+    if(!players?.length) return showFinalToast?.("Önce oyun başlat.", "warn");
+
+    const overlay = $("tradeOverlay");
+    if(!overlay) return;
+
+    const from = $("tradeFromPlayer");
+    const to = $("tradeToPlayer");
+    const prop = $("tradePropertySelect");
+
+    [from,to,prop].forEach(el => { if(el) el.innerHTML = ""; });
+
+    players.forEach((p,i) => {
+      const o1 = document.createElement("option");
+      o1.value = i;
+      o1.textContent = p.name;
+      from?.appendChild(o1);
+
+      const o2 = document.createElement("option");
+      o2.value = i;
+      o2.textContent = p.name;
+      to?.appendChild(o2);
+    });
+
+    function refreshProps(){
+      const pi = Number(from.value || 0);
+      prop.innerHTML = "";
+      (players[pi]?.owned || []).forEach(idx => {
+        const o = document.createElement("option");
+        o.value = idx;
+        o.textContent = boardSpaces[idx]?.n || ("Mülk " + idx);
+        prop.appendChild(o);
+      });
+      if(!prop.children.length){
+        const o = document.createElement("option");
+        o.value = "";
+        o.textContent = "Mülk yok";
+        prop.appendChild(o);
+      }
+    }
+
+    from.onchange = refreshProps;
+    refreshProps();
+
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeTradeOverlay(){
+    const overlay = $("tradeOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+  }
+
+  async function confirmTradeFinal(){
+    const fromIndex = Number($("tradeFromPlayer")?.value || 0);
+    const toIndex = Number($("tradeToPlayer")?.value || 0);
+    const propIndexRaw = $("tradePropertySelect")?.value;
+    const money = Math.max(0, Number($("tradeMoneyInput")?.value || 0));
+
+    if(fromIndex === toIndex){
+      return showFinalToast?.("Aynı oyuncuyla takas olmaz.", "warn");
+    }
+
+    const fromP = players[fromIndex];
+    const toP = players[toIndex];
+    if(!fromP || !toP) return;
+
+    if(money > 0){
+      if(toP.money < money) return showFinalToast?.("Alıcıda yeterli para yok.", "warn");
+      toP.money -= money;
+      fromP.money += money;
+    }
+
+    if(propIndexRaw !== ""){
+      const propIndex = Number(propIndexRaw);
+      if(!fromP.owned.includes(propIndex)) return showFinalToast?.("Bu mülk seçilen oyuncuda değil.", "warn");
+      fromP.owned = fromP.owned.filter(i => i !== propIndex);
+      toP.owned.push(propIndex);
+    }
+
+    addActivity?.(`🤝 ${fromP.name} ile ${toP.name} takas yaptı.`);
+    refreshTileOwnership?.();
+    renderPlayers?.();
+    updatePanel?.();
+    renderLeftPlayerPanel?.();
+    saveCurrentGameFinal();
+    if(isOnlineGame && typeof saveOnlineFullState === "function"){
+      await saveOnlineFullState("Takas yapıldı.");
+    }
+    closeTradeOverlay();
+    showFinalToast?.("Takas tamamlandı.", "ok");
+  }
+
+  // Player panel button insert
+  function ensureTradeButtonFinal(){
+    if($("tradeBtn")) return;
+    const side = $("sidePanel");
+    const ref = $("myPropertiesBtn") || $("gameSettingsBtn");
+    if(!side || !ref) return;
+    const btn = document.createElement("button");
+    btn.id = "tradeBtn";
+    btn.className = "panel-btn trade-btn-final";
+    btn.textContent = "🤝 Takas";
+    ref.insertAdjacentElement("afterend", btn);
+    btn.addEventListener("click", openTradeOverlay);
+  }
+
+  const _showScreenFinal = showScreen;
+  showScreen = function(name){
+    _showScreenFinal(name);
+    if(name === "game"){
+      setTimeout(ensureTradeButtonFinal, 200);
+      setTimeout(saveCurrentGameFinal, 1000);
+    }
+  };
+
+  // İflas + kazanan final ekranı
+  function checkBankruptcyAndWinnerFinal(){
+    if(!players?.length) return;
+    let changed = false;
+    players.forEach(p => {
+      if(!p.bankrupt && p.money < 0){
+        p.bankrupt = true;
+        addActivity?.(`💀 ${p.name} iflas etti.`);
+        changed = true;
+      }
+    });
+
+    const alive = players.filter(p => !p.bankrupt);
+    if(alive.length === 1 && players.length > 1){
+      showFamilyWinnerFinal(alive[0]);
+      changed = true;
+    }
+    if(changed) saveCurrentGameFinal();
+  }
+
+  function showFamilyWinnerFinal(winner){
+    if($("familyWinnerOverlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "familyWinnerOverlay";
+    overlay.className = "online-winner-overlay show";
+    const totalValue = (winner.owned || []).reduce((s,i)=>s+getSpacePurchasePrice(boardSpaces[i]),0) + winner.money;
+    overlay.innerHTML = `
+      <div class="online-winner-card family-winner-card">
+        <div class="online-winner-cup">🏆</div>
+        <h2>${escapeHTML(winner.name)} Kazandı!</h2>
+        <p>Toplam değer: <b>${totalValue} TL</b></p>
+        <div class="winner-mini-stats">
+          <div><b>${winner.money}</b><span>Para</span></div>
+          <div><b>${(winner.owned||[]).length}</b><span>Mülk</span></div>
+          <div><b>${formatTime?.(Math.floor((Date.now() - (gameStartedAt || Date.now()))/1000)) || "-"}</b><span>Süre</span></div>
+        </div>
+        <button id="familyWinnerMenuBtn">Ana Menüye Dön</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    try{ spawnFinalConfetti?.(); }catch(e){}
+    try{ playSound("win"); }catch(e){}
+    $("familyWinnerMenuBtn")?.addEventListener("click", () => {
+      overlay.remove();
+      localStorage.removeItem(SAVE_KEY_FINAL);
+      updateContinueButtonFinal();
+      showScreen("menu");
+    });
+  }
+
+  // Finish turn ve save noktaları
+  const _finishTurnFamily = finishTurn;
+  finishTurn = async function(){
+    const r = await _finishTurnFamily();
+    checkBankruptcyAndWinnerFinal();
+    saveCurrentGameFinal();
+    return r;
+  };
+
+  const _buyCurrentSpaceFamily = buyCurrentSpace;
+  buyCurrentSpace = function(){
+    const r = _buyCurrentSpaceFamily();
+    saveCurrentGameFinal();
+    return r;
+  };
+
+  const _payPendingRentFamily = payPendingRent;
+  payPendingRent = function(){
+    const r = _payPendingRentFamily();
+    checkBankruptcyAndWinnerFinal();
+    saveCurrentGameFinal();
+    return r;
+  };
+
+  // Bot AI 2.0 basit güçlendirme
+  if(typeof botShouldBuy === "function"){
+    botShouldBuy = function(bot, space, price){
+      const ownedCount = bot.owned?.length || 0;
+      if(bot.money < price + 250) return false;
+      if(price <= 180) return true;
+      if(ownedCount < 3 && bot.money > price + 400) return true;
+      if(space?.color && bot.owned?.some(i => boardSpaces[i]?.color === space.color)) return true;
+      return bot.money > price * 2;
+    };
+  }
+
+  // Profil level / XP
+  function getProfileLevelFinal(){
+    const xp = Number(localStorage.getItem("barutpolyXP") || 0);
+    return Math.max(1, Math.floor(xp / 500) + 1);
+  }
+
+  function addXPFinal(amount){
+    const xp = Number(localStorage.getItem("barutpolyXP") || 0) + amount;
+    localStorage.setItem("barutpolyXP", String(xp));
+  }
+
+  const _renderProfileStatsFamily = renderProfileStats;
+  renderProfileStats = function(){
+    _renderProfileStatsFamily();
+    const holder = $("profileStats");
+    if(holder && !holder.querySelector(".level-stat")){
+      const div = document.createElement("div");
+      div.className = "level-stat";
+      div.innerHTML = `<b>Lv.${getProfileLevelFinal()}</b><span>Seviye</span>`;
+      holder.prepend(div);
+    }
+  };
+
+  // Events
+  setTimeout(() => {
+    $("continueSaveBtn")?.addEventListener("click", continueSavedGameFinal);
+    $("closeTradeBtn")?.addEventListener("click", closeTradeOverlay);
+    $("confirmTradeBtn")?.addEventListener("click", confirmTradeFinal);
+    $("closeFinalSettingsBtn")?.addEventListener("click", closeFinalSettings);
+    $("saveFinalSettingsBtn")?.addEventListener("click", saveFinalSettings);
+    $("tradeOverlay")?.addEventListener("click", (e) => { if(e.target === $("tradeOverlay")) closeTradeOverlay(); });
+    $("finalSettingsOverlay")?.addEventListener("click", (e) => { if(e.target === $("finalSettingsOverlay")) closeFinalSettings(); });
+    updateContinueButtonFinal();
+    applyFinalSettings();
+  }, 500);
+
+  // Family ready toast
+  setTimeout(() => showFinalToast?.("BarutPoly 1.0 Family hazır.", "ok", 3500), 1200);
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -6978,3 +7371,11 @@ window.addEventListener("DOMContentLoaded", () => {
   renderNameInputs();
   loadTrack(0);
 });
+
+// V1.0.1 No Trade Patch
+try{
+window.openTradeOverlay=function(){};
+window.confirmTradeFinal=function(){};
+window.closeTradeOverlay=function(){};
+const b=document.getElementById("tradeBtn"); if(b) b.remove();
+} catch(e){}

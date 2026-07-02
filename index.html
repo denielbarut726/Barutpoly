@@ -38,13 +38,14 @@
 
     <div class="menu-card">
       <button id="startBtn" class="menuBtn"><span>▶</span><b>OYUNA BAŞLA</b></button>
+      <button id="continueSaveBtn" class="menuBtn hidden"><span>💾</span><b>KAYITLI OYUNA DEVAM ET</b></button>
       <button id="onlineBtn" class="menuBtn online-menu-btn"><span>🌐</span><b>ONLINE OYNA</b></button>
       <button id="settingsBtn" class="menuBtn"><span>⚙</span><b>AYARLAR</b></button>
       <button id="howToBtn" class="menuBtn"><span>📖</span><b>NASIL OYNANIR?</b></button>
       <button id="profileBtn" class="menuBtn"><span>👤</span><b>PROFİL</b></button>
       <button id="themesBtn" class="menuBtn"><span>🎨</span><b>TEMALAR</b></button>
       <div class="version">
-        <div>v0.47.2.2</div>
+        <div>v1.0 Family.2</div>
         <div class="creator">By Deniel Demir Barut</div>
       </div>
     </div>
@@ -617,6 +618,20 @@
       <h2>Temalar</h2>
       <p class="theme-page-desc">Bir tema seç. Menü, tahta, paneller, butonlar ve ışıklar değişir.</p>
       <div id="themeGrid" class="theme-grid theme-grid-large"></div>
+    </div>
+  </div>
+<div id="finalSettingsOverlay" class="profile-overlay hidden">
+    <div class="profile-card settings-final-card">
+      <button id="closeFinalSettingsBtn" class="profile-close">×</button>
+      <div class="profile-small">BARUTPOLY AYARLAR</div>
+      <h2>Oyun Ayarları</h2>
+      <div class="final-settings-list">
+        <label><span>🔊 Ses Efektleri</span><input id="settingSfx" type="checkbox" checked></label>
+        <label><span>🎵 Müzik</span><input id="settingMusic" type="checkbox" checked></label>
+        <label><span>✨ Animasyonlar</span><input id="settingAnimations" type="checkbox" checked></label>
+        <label><span>⚡ Performans Modu</span><input id="settingPerf" type="checkbox"></label>
+      </div>
+      <button id="saveFinalSettingsBtn" class="trade-confirm">Ayarları Kaydet</button>
     </div>
   </div>
 
