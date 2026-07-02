@@ -5104,6 +5104,435 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
 
+
+  /* ===== V41 + V42 MEGA RULES SYNC =====
+     Online kuralları tek pakette güçlendirme:
+     - owner/rent/money tam state
+     - iflas/yetersiz para kontrolü
+     - şans kartı sonrası geç senkron
+     - hapis/başlangıç/vergi güvenli state
+     - oyun sonu kontrolü
+     - online action lock
+  */
+
+  let onlineActionBusy = false;
+
+  function isPlayerBankrupt(p){
+    return !!p && Number(p.money) < 0;
+  }
+
+  function getAliveOnlinePlayers(){
+    return players.filter(p => !p.bankrupt);
+  }
+
+  function normalizeFullOnlinePlayerState(raw, index){
+    const p = normalizeOnlineGamePlayers([raw])[0] || {};
+    return {
+      ...p,
+      id: raw.id || p.id || ("online_" + index),
+      bankrupt: !!raw.bankrupt,
+      propertiesValue: Number(raw.propertiesValue || 0)
+    };
+  }
+
+  const _normalizeOnlineGamePlayersV4142 = normalizeOnlineGamePlayers;
+  normalizeOnlineGamePlayers = function(rawPlayers){
+    return (rawPlayers || []).map((raw, index) => {
+      const base = _normalizeOnlineGamePlayersV4142([raw])[0];
+      return {
+        ...base,
+        id: raw.id || base.id || ("online_" + index),
+        bankrupt: !!raw.bankrupt,
+        propertiesValue: Number(raw.propertiesValue || 0)
+      };
+    });
+  };
+
+  function serializeOnlinePlayerFull4142(p){
+    return {
+      id:p.id,
+      name:p.name,
+      host:!!p.host,
+      character:p.character || "🚗",
+      money:Number.isFinite(Number(p.money)) ? Number(p.money) : 1500,
+      position:Number.isFinite(Number(p.position)) ? Number(p.position) : 0,
+      owned:Array.isArray(p.owned) ? [...p.owned] : [],
+      housesAvailable:Number.isFinite(Number(p.housesAvailable)) ? Number(p.housesAvailable) : 12,
+      hotelsAvailable:Number.isFinite(Number(p.hotelsAvailable)) ? Number(p.hotelsAvailable) : 4,
+      jailTurns:Number.isFinite(Number(p.jailTurns)) ? Number(p.jailTurns) : 0,
+      bankrupt:!!p.bankrupt,
+      propertiesValue:(p.owned || []).reduce((sum,i) => sum + getSpacePurchasePrice(boardSpaces[i]), 0)
+    };
+  }
+
+  function serializeOnlinePlayersFull4142(){
+    return players.map(serializeOnlinePlayerFull4142);
+  }
+
+  function checkOnlineBankruptcy(){
+    let changed = false;
+
+    players.forEach((p, index) => {
+      if(!p.bankrupt && p.money < 0){
+        p.bankrupt = true;
+        addActivity?.(`💀 ${p.name} iflas etti.`);
+        changed = true;
+      }
+    });
+
+    const alive = players.filter(p => !p.bankrupt);
+
+    if(alive.length === 1 && players.length > 1){
+      const winner = alive[0];
+      addActivity?.(`🏆 ${winner.name} online oyunu kazandı!`);
+      showOnlineWinner?.(winner);
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  function showOnlineWinner(winner){
+    const existing = $("onlineWinnerOverlay");
+    if(existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "onlineWinnerOverlay";
+    overlay.className = "online-winner-overlay show";
+    overlay.innerHTML = `
+      <div class="online-winner-card">
+        <div class="online-winner-cup">🏆</div>
+        <h2>${escapeHTML(winner.name)} Kazandı!</h2>
+        <p>BarutPoly Online oyununun kazananı belli oldu.</p>
+        <button id="onlineWinnerMenuBtn">Ana Menüye Dön</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    $("onlineWinnerMenuBtn")?.addEventListener("click", () => {
+      overlay.remove();
+      isOnlineGame = false;
+      onlineGameRoomCode = null;
+      showScreen("menu");
+    });
+  }
+
+  async function saveOnlineFullState4142(reason="Güncellendi", extra={}){
+    if(!isOnlineGame || !onlineGameRoomCode || !initFirebaseLobby()) return;
+
+    checkOnlineBankruptcy();
+
+    const diceOneValue = Number($("diceOne")?.dataset.value || 1);
+    const diceTwoValue = Number($("diceTwo")?.dataset.value || 1);
+
+    const alive = players.filter(p => !p.bankrupt);
+    const status = alive.length === 1 && players.length > 1 ? "finished" : "playing";
+
+    await roomRef(onlineGameRoomCode).set({
+      status,
+      gameState:{
+        players: serializeOnlinePlayersFull4142(),
+        activePlayerIndex,
+        hasRolledThisTurn,
+        canEndTurn,
+        diceOne: diceOneValue,
+        diceTwo: diceTwoValue,
+        buildState: collectBuildState?.() || {},
+        message: reason,
+        winnerId: status === "finished" ? alive[0]?.id : null,
+        winnerName: status === "finished" ? alive[0]?.name : null,
+        ...extra
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  }
+
+  saveOnlineFullState = saveOnlineFullState4142;
+
+  const _applyOnlineGameStateV4142 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    _applyOnlineGameStateV4142(data);
+
+    if(Array.isArray(data?.players)){
+      players.forEach((p, i) => {
+        p.bankrupt = !!data.players[i]?.bankrupt;
+      });
+    }
+
+    renderPlayers?.();
+    refreshTileOwnership?.();
+
+    if(data?.winnerId){
+      const winner = players.find(p => p.id === data.winnerId) || {name:data.winnerName || "Oyuncu"};
+      showOnlineWinner(winner);
+    }
+  };
+
+  function nextActiveOnlinePlayerIndex(fromIndex){
+    if(!players.length) return 0;
+
+    for(let step=1; step<=players.length; step++){
+      const next = (fromIndex + step) % players.length;
+      if(!players[next]?.bankrupt) return next;
+    }
+
+    return fromIndex;
+  }
+
+  function guardOnlineBusy(){
+    if(onlineActionBusy){
+      playSound("fail");
+      return true;
+    }
+    return false;
+  }
+
+  async function withOnlineActionLock(fn){
+    if(guardOnlineBusy()) return;
+    onlineActionBusy = true;
+
+    try{
+      await fn();
+    }finally{
+      onlineActionBusy = false;
+    }
+  }
+
+  // Online tur bitirme: iflas etmiş oyuncuları atla.
+  finishTurn = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    if(pendingRent && !pendingRent.paid){
+      showRentWarning?.();
+      return;
+    }
+
+    if(!canEndTurn) return;
+
+    closeCard?.();
+
+    const oldIndex = activePlayerIndex;
+    activePlayerIndex = nextActiveOnlinePlayerIndex(activePlayerIndex);
+    hasRolledThisTurn = false;
+    canEndTurn = false;
+    currentOpenSpaceIndex = null;
+    currentBuyerIndex = null;
+
+    const nextPlayer = players[activePlayerIndex];
+
+    if(nextPlayer && nextPlayer.jailTurns > 0){
+      nextPlayer.jailTurns -= 1;
+      hasRolledThisTurn = true;
+      canEndTurn = true;
+      if($("diceTotal")) $("diceTotal").textContent = `${nextPlayer.name} hapiste. Kalan tur: ${nextPlayer.jailTurns}`;
+      addActivity?.(`⛓️ ${nextPlayer.name} hapiste bekledi. Kalan tur: ${nextPlayer.jailTurns}`);
+      playSound("jail");
+    }else{
+      if($("diceTotal")) $("diceTotal").textContent = "Sıra yeni oyuncuda.";
+      addActivity?.(`➡️ Sıra ${nextPlayer?.name || "oyuncuda"}.`);
+      playSound("click");
+    }
+
+    updatePanel?.();
+    updateTurnButtons?.();
+    renderLeftPlayerPanel?.();
+
+    if(isOnlineGame){
+      await saveOnlineFullState4142(`Sıra ${players[activePlayerIndex]?.name || "oyuncuda"}.`);
+    }
+  };
+
+  // Online satın alma: mülk sahibi ve para kesin senkron.
+  if(typeof buyCurrentSpace === "function"){
+    buyCurrentSpace = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      const index = currentOpenSpaceIndex;
+      const player = players[activePlayerIndex];
+      const space = boardSpaces[index];
+
+      if(!space || !player || !canBuySpace(space)) return;
+      if(getOwnerIndex(index) >= 0){
+        playSound("fail");
+        return;
+      }
+
+      const price = getSpacePurchasePrice(space);
+
+      if(player.money < price){
+        playSound("fail");
+        if($("diceTotal")) $("diceTotal").textContent = "Yeterli paran yok.";
+        return;
+      }
+
+      player.money -= price;
+      player.owned.push(index);
+      showMoneyPopup?.(activePlayerIndex, -price);
+      playSound("buy");
+      addActivity?.(`🏠 ${player.name} ${space.n} satın aldı.`);
+
+      closeCard?.();
+      refreshTileOwnership?.();
+      updatePanel?.();
+      renderLeftPlayerPanel?.();
+
+      if(isOnlineGame){
+        saveOnlineFullState4142(`${player.name} ${space.n} satın aldı.`);
+      }
+    };
+  }
+
+  // Online kira: iki taraf parası kesin senkron.
+  if(typeof payPendingRent === "function"){
+    payPendingRent = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      if(!pendingRent || pendingRent.paid) return;
+
+      const payer = players[pendingRent.payerIndex];
+      const owner = players[pendingRent.ownerIndex];
+      const amount = pendingRent.amount || 0;
+
+      if(!payer || !owner) return;
+
+      payer.money -= amount;
+      owner.money += amount;
+      pendingRent.paid = true;
+
+      showMoneyPopup?.(pendingRent.payerIndex, -amount);
+      showMoneyPopup?.(pendingRent.ownerIndex, amount);
+      playPaymentSound?.();
+      addActivity?.(`💸 ${payer.name}, ${owner.name} oyuncusuna ${amount} TL kira ödedi.`);
+
+      closeCard?.();
+      updatePanel?.();
+      renderPlayers?.();
+      checkOnlineBankruptcy();
+
+      if(isOnlineGame){
+        saveOnlineFullState4142(`${payer.name} ${amount} TL kira ödedi.`);
+      }
+    };
+  }
+
+  // Şans kartı sonrası biraz bekleyip state'i tekrar yaz.
+  if(typeof drawChanceCard === "function"){
+    const _drawChanceCardV4142 = drawChanceCard;
+    drawChanceCard = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _drawChanceCardV4142();
+
+      if(isOnlineGame){
+        setTimeout(() => saveOnlineFullState4142(`${players[activePlayerIndex]?.name || "Oyuncu"} şans kartı çekti.`), 2300);
+      }
+    };
+  }
+
+  // Hapis seçimleri
+  if(typeof choosePayBail === "function"){
+    const _choosePayBailV4142 = choosePayBail;
+    choosePayBail = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _choosePayBailV4142();
+      if(isOnlineGame) saveOnlineFullState4142(`${players[activePlayerIndex]?.name || "Oyuncu"} kefalet ödedi.`);
+    };
+  }
+
+  if(typeof chooseStayInJail === "function"){
+    const _chooseStayInJailV4142 = chooseStayInJail;
+    chooseStayInJail = function(){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _chooseStayInJailV4142();
+      if(isOnlineGame) saveOnlineFullState4142(`${players[activePlayerIndex]?.name || "Oyuncu"} hapiste kalmayı seçti.`);
+    };
+  }
+
+  // Ev/otel state
+  if(typeof buildOnProperty === "function"){
+    const _buildOnPropertyV4142 = buildOnProperty;
+    buildOnProperty = function(spaceIndex){
+      if(isOnlineGame && !isOnlineActionAllowed()){
+        playSound("fail");
+        return;
+      }
+
+      _buildOnPropertyV4142(spaceIndex);
+      if(isOnlineGame){
+        saveOnlineFullState4142(`${players[activePlayerIndex]?.name || "Oyuncu"} yapı kurdu.`);
+      }
+    };
+  }
+
+  // Landing sonrası vergi, başlangıç, hapis, boş kareler state.
+  if(typeof afterPlayerLands === "function"){
+    const _afterPlayerLandsV4142 = afterPlayerLands;
+    afterPlayerLands = function(playerIndex, landedIndex){
+      _afterPlayerLandsV4142(playerIndex, landedIndex);
+
+      if(isOnlineGame && playerIndex === activePlayerIndex){
+        const p = players[playerIndex];
+        const s = boardSpaces[landedIndex];
+        setTimeout(() => {
+          checkOnlineBankruptcy();
+          saveOnlineFullState4142(`${p?.name || "Oyuncu"} ${s?.n || "kare"} karesine geldi.`);
+        }, 500);
+      }
+    };
+  }
+
+  // Başlangıçtan geçince para zaten rollDice içinde ekleniyor; roll sonrası tam state yazılsın.
+  const _rollDiceV4142 = rollDice;
+  rollDice = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    await _rollDiceV4142();
+
+    if(isOnlineGame){
+      setTimeout(() => saveOnlineFullState4142(`Toplam: ${Number($("diceOne")?.dataset.value || 1) + Number($("diceTwo")?.dataset.value || 1)}`), 2100);
+    }
+  };
+
+  // UI: iflas edenleri panelde göster.
+  const _renderPlayersV4142 = renderPlayers;
+  renderPlayers = function(){
+    _renderPlayersV4142();
+
+    document.querySelectorAll(".player-row").forEach((row, index) => {
+      if(players[index]?.bankrupt){
+        row.classList.add("bankrupt-player");
+        const b = row.querySelector("b");
+        if(b && !b.textContent.includes("İFLAS")){
+          b.innerHTML += `<em class="bankrupt-tag">İFLAS</em>`;
+        }
+      }
+    });
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);

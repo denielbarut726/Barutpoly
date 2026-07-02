@@ -5719,3 +5719,78 @@ button:disabled{
   font-weight:900;
   pointer-events:none;
 }
+
+
+/* ===== V41 + V42 MEGA RULES SYNC UI ===== */
+
+.bankrupt-player{
+  opacity:.48;
+  filter:grayscale(.7);
+}
+
+.bankrupt-tag{
+  display:inline-flex;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:999px;
+  background:rgba(239,68,68,.25);
+  border:1px solid rgba(248,113,113,.4);
+  color:#fecaca;
+  font-size:10px;
+  font-style:normal;
+  font-weight:900;
+}
+
+.online-winner-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99995;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(12px);
+}
+
+.online-winner-card{
+  width:min(520px,92vw);
+  padding:34px;
+  border-radius:32px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(246,196,83,.22),transparent 42%),
+    linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
+  border:2px solid rgba(246,196,83,.65);
+  box-shadow:0 0 70px rgba(246,196,83,.28),0 0 45px rgba(168,85,247,.25);
+}
+
+.online-winner-cup{
+  font-size:76px;
+  margin-bottom:10px;
+}
+
+.online-winner-card h2{
+  font-family:"Cinzel",serif;
+  font-size:40px;
+  color:#F6C453;
+  margin-bottom:10px;
+}
+
+.online-winner-card p{
+  color:#cbd5e1;
+  font-size:18px;
+  font-weight:800;
+  margin-bottom:20px;
+}
+
+.online-winner-card button{
+  height:52px;
+  padding:0 24px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(180deg,#f6c453,#a76b17);
+  color:#111827;
+  font-weight:900;
+  font-size:17px;
+  cursor:pointer;
+}
