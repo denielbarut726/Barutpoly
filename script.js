@@ -4562,6 +4562,197 @@ window.addEventListener("DOMContentLoaded", () => {
   resetDiceFacesVisual();
 
 
+
+  /* ===== V39.2 ONLINE DICE RESULT FIX ===== */
+
+  function writeDiceValuesToDom(d1,d2){
+    renderDice(d1,d2);
+    const one = $("diceOne");
+    const two = $("diceTwo");
+    if(one) one.dataset.value = String(d1);
+    if(two) two.dataset.value = String(d2);
+  }
+
+  function serializeOnlinePlayers(){
+    return normalizeOnlineGamePlayers(players).map(p => ({
+      id:p.id,
+      name:p.name,
+      host:!!p.host,
+      character:p.character || "🚗",
+      money:p.money,
+      position:p.position,
+      owned:p.owned || [],
+      housesAvailable:p.housesAvailable ?? 12,
+      hotelsAvailable:p.hotelsAvailable ?? 4,
+      jailTurns:p.jailTurns || 0
+    }));
+  }
+
+  async function saveOnlineGameState(extra = {}){
+    if(!isOnlineGame || !onlineGameRoomCode || !initFirebaseLobby()) return;
+
+    await roomRef(onlineGameRoomCode).set({
+      gameState:{
+        players: serializeOnlinePlayers(),
+        activePlayerIndex,
+        hasRolledThisTurn,
+        canEndTurn,
+        ...extra
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  }
+
+  // Eski apply state mesajı zar toplamını ezmesin.
+  const _applyOnlineGameStateV392 = applyOnlineGameState;
+  applyOnlineGameState = function(data){
+    _applyOnlineGameStateV392(data);
+
+    if(data?.diceOne && data?.diceTwo){
+      const d1 = Number(data.diceOne);
+      const d2 = Number(data.diceTwo);
+      writeDiceValuesToDom(d1,d2);
+      if($("diceTotal")) $("diceTotal").textContent = `Toplam: ${d1 + d2}`;
+    }
+  };
+
+  // Online zar: eski nested override'ları kullanmadan temiz akış.
+  rollDice = async function(){
+    if(!players.length) return;
+
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    if(hasRolledThisTurn) return;
+
+    const currentPlayer = players[activePlayerIndex];
+
+    if(currentPlayer?.jailTurns > 0){
+      $("diceTotal").textContent = `${currentPlayer.name} hapiste. Turunu bitir.`;
+      canEndTurn = true;
+      updateTurnButtons();
+      updatePanel();
+      if(isOnlineGame){
+        await saveOnlineGameState({
+          message:`${currentPlayer.name} hapiste.`,
+          diceOne:Number($("diceOne")?.dataset.value || 1),
+          diceTwo:Number($("diceTwo")?.dataset.value || 1)
+        });
+      }
+      return;
+    }
+
+    if(!isOnlineGame){
+      // Klasik oyunda mevcut orijinal mantık kullanılsın diye eski V39.1 fonksiyonunu çağır.
+      // _rollDiceV391 varsa onu, yoksa fail-safe olarak temel akışı kullan.
+      if(typeof _rollDiceV391 === "function"){
+        return _rollDiceV391();
+      }
+    }
+
+    hasRolledThisTurn = true;
+    canEndTurn = false;
+    updateTurnButtons();
+
+    const btn = $("rollDiceBtn");
+    const diceBox = document.querySelector(".dice-box");
+
+    btn.disabled = true;
+    btn.classList.add("rolling-btn");
+    diceBox?.classList.add("rolling-glow");
+
+    $("diceTotal").textContent = "Zar atılıyor...";
+    $("diceTotal").classList.add("rolling-text");
+    $("diceOne").classList.add("rolling");
+    $("diceTwo").classList.add("rolling");
+    startLoopSound("dice");
+
+    const rollDuration = 900;
+    const startedAt = Date.now();
+
+    while(Date.now() - startedAt < rollDuration){
+      writeDiceValuesToDom(rand(1,6), rand(1,6));
+      await wait(75);
+    }
+
+    const d1 = rand(1,6);
+    const d2 = rand(1,6);
+    const total = d1 + d2;
+
+    writeDiceValuesToDom(d1,d2);
+
+    $("diceOne").classList.remove("rolling");
+    $("diceTwo").classList.remove("rolling");
+    $("diceTotal").classList.remove("rolling-text");
+    stopSound("dice");
+
+    const playerIndex = activePlayerIndex;
+    const player = players[playerIndex];
+    const oldPos = player.position;
+    const rawNewPos = oldPos + total;
+    const passedStart = rawNewPos >= boardSpaces.length;
+
+    $("diceTotal").textContent = `Toplam: ${total}`;
+    addActivity?.(`🎲 ${player.name} ${total} attı.`);
+
+    await movePlayerStepByStep(playerIndex, total);
+
+    const landedIndex = player.position;
+
+    if(passedStart){
+      player.money += 200;
+      $("diceTotal").textContent = `Toplam: ${total} | +200 TL`;
+      showMoneyPopup(playerIndex, 200);
+      addActivity?.(`💰 ${player.name} başlangıçtan geçti, 200 TL aldı.`);
+    }
+
+    afterPlayerLands(playerIndex, landedIndex);
+
+    await wait(500);
+
+    canEndTurn = true;
+    updatePanel();
+
+    diceBox?.classList.remove("rolling-glow");
+    btn.classList.remove("rolling-btn");
+    updateTurnButtons();
+
+    await saveOnlineGameState({
+      diceOne:d1,
+      diceTwo:d2,
+      message:`Toplam: ${total}`
+    });
+
+    // Firebase snapshot geldikten sonra bile sonucu hemen ekranda sabit tut.
+    writeDiceValuesToDom(d1,d2);
+    $("diceTotal").textContent = `Toplam: ${total}`;
+  };
+
+  const _finishTurnV392 = finishTurn;
+  finishTurn = async function(){
+    if(isOnlineGame && !isMyOnlineTurn()){
+      playSound("fail");
+      return;
+    }
+
+    const lastD1 = Number($("diceOne")?.dataset.value || 1);
+    const lastD2 = Number($("diceTwo")?.dataset.value || 1);
+
+    _finishTurnV392();
+
+    if(isOnlineGame){
+      await saveOnlineGameState({
+        diceOne:lastD1,
+        diceTwo:lastD2,
+        message:`Sıra ${players[activePlayerIndex]?.name || "oyuncuda"}.`
+      });
+      writeDiceValuesToDom(lastD1,lastD2);
+    }
+  };
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
