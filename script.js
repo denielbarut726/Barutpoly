@@ -6388,6 +6388,112 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 500);
 
 
+
+  /* ===== V47 PROFILE / THEME / CHAT LAYOUT FIX ===== */
+
+  function openThemesOverlay(){
+    const overlay = $("themesOverlay");
+    if(!overlay) return;
+    renderThemeGrid();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  }
+
+  function closeThemesOverlay(){
+    const overlay = $("themesOverlay");
+    if(!overlay) return;
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.classList.add("hidden"), 220);
+    playSound("click");
+  }
+
+  const _applyThemeV47 = applyTheme;
+  applyTheme = function(themeId=profileState.theme){
+    _applyThemeV47(themeId);
+    document.documentElement.dataset.theme = themeId;
+    document.body.dataset.theme = themeId;
+    const meta = V46_THEMES.find(t => t.id === themeId);
+    showFinalToast?.(`${meta?.name || "Tema"} aktif edildi.`, "ok");
+  };
+
+  renderThemeGrid = function(){
+    const grid = $("themeGrid");
+    if(!grid) return;
+    grid.innerHTML = "";
+
+    V46_THEMES.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = `theme-card theme-${t.id} ${profileState.theme === t.id ? "active" : ""}`;
+      btn.innerHTML = `
+        <span>${t.icon}</span>
+        <b>${t.name}</b>
+        <small>${t.desc}</small>
+        <em>${profileState.theme === t.id ? "AKTİF" : "SEÇ"}</em>
+      `;
+      btn.addEventListener("click", () => {
+        profileState.theme = t.id;
+        applyTheme(t.id);
+        saveProfileState();
+        renderThemeGrid();
+        playSound("click");
+      });
+      grid.appendChild(btn);
+    });
+  };
+
+  openProfileOverlay = function(){
+    const overlay = $("profileOverlay");
+    if(!overlay) return;
+    if($("profileNameInput")) $("profileNameInput").value = profileState.name || "";
+    renderProfileStats();
+    updateDailyRewardUI();
+    overlay.classList.remove("hidden");
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    playSound("click");
+  };
+
+  function adjustChatPanelLayout(){
+    const chat = $("chatPanel");
+    const activity = $("activityPanel");
+    const left = $("leftPlayerPanel");
+    if(!chat || !activity || !left) return;
+
+    const game = $("game");
+    if(!game || game.classList.contains("hidden")) return;
+
+    if(window.innerWidth > 950){
+      const activityBottom = activity.offsetTop + activity.offsetHeight;
+      const leftTop = left.offsetTop;
+      const available = Math.max(150, leftTop - activityBottom - 24);
+
+      chat.style.left = activity.offsetLeft + "px";
+      chat.style.top = (activityBottom + 12) + "px";
+      chat.style.width = activity.offsetWidth + "px";
+      chat.style.maxHeight = available + "px";
+
+      const messages = $("chatMessages");
+      if(messages){
+        messages.style.height = Math.max(78, available - 92) + "px";
+      }
+    }
+  }
+
+  const _showScreenV47 = showScreen;
+  showScreen = function(name){
+    _showScreenV47(name);
+    setTimeout(adjustChatPanelLayout, 150);
+    setTimeout(adjustChatPanelLayout, 500);
+  };
+
+  window.addEventListener("resize", () => setTimeout(adjustChatPanelLayout, 120));
+
+  setTimeout(() => {
+    applyTheme(profileState.theme || "classic");
+    adjustChatPanelLayout();
+  }, 300);
+
+
   // Events
 
   $("howToBtn")?.addEventListener("click", openHowTo);
@@ -6464,6 +6570,9 @@ window.addEventListener("DOMContentLoaded", () => {
   $("backCharacterLobbyBtn")?.addEventListener("click", backFromCharacterToLobby);
 
   $("profileBtn")?.addEventListener("click", openProfileOverlay);
+  $("themesBtn")?.addEventListener("click", openThemesOverlay);
+  $("closeThemesBtn")?.addEventListener("click", closeThemesOverlay);
+  $("themesOverlay")?.addEventListener("click", (e) => { if(e.target === $("themesOverlay")) closeThemesOverlay(); });
   $("closeProfileBtn")?.addEventListener("click", closeProfileOverlay);
   $("saveProfileBtn")?.addEventListener("click", saveProfileName);
   $("claimDailyRewardBtn")?.addEventListener("click", claimDailyReward);
